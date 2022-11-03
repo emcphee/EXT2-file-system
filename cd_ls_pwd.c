@@ -181,6 +181,34 @@ void rpwd(MINODE *wd){
   return;
 }
 
+void enter_name(MINODE *pip, int ino, char *name){
+  char buf[BLKSIZE];
+
+  for(int i=0; i<12; i++){
+    if(pip->INODE.i_block[i] == 0){
+      break;
+    }
+
+    get_block(pip->dev, pip->INODE.i_block[i], buf);
+    DIR *dp = (DIR *)buf;
+    char *cp = buf;
+
+    int ideal_len = 4*((8 + dp->name_len + 3) /4);
+    int need_len = 4*((8 + strlen(name) + 3) /4);
+
+
+    while (cp + dp->rec_len < buf + BLKSIZE){
+      cp += dp->rec_len;
+      dp = (DIR *)cp;
+    }
+
+    int remaining = dp->rec_len - ideal_len;
+    if(remaining >= need_len){
+      //enter the new entry as the LAST entry and
+      //trim the previous entry rec_len to its ideal_length;
+    }
+  }
+}
 
 void rmkdir(){
   // char *pathname = "doge/cat/real";
@@ -216,14 +244,73 @@ void rmkdir(){
   // MINODE* pmip = iget(dev, pino);
 
   if(pino == 0){
-    printf("[!] INO not found");
+    printf("[!] INO not found\n");
     return;
   } else {
     MINODE* pmip = iget(dev, pino);
     if(search(pmip, basename) == 0){
       printf("[+] Good!\n");
+    } else {
+      printf("[!] Error dir already exists!\n");
+      return;
     }
   }
+
+  // (4).1. Allocate an INODE and a disk block:
+  int ino = ialloc(dev);
+  int blk = balloc(dev);
+
+  /*
+  (4).2. mip = iget(dev, ino) // load INODE into a minode
+    initialize mip->INODE as a DIR INODE;
+    mip->INODE.i_block[0] = blk; other i_block[ ] = 0;
+    mark minode modified (dirty);
+    iput(mip); // write INODE back to disk
+  */
+
+  MINODE *mip = iget(dev, ino);
+  INODE *ip = &mip->INODE;
+
+  ip->i_mode = 0x41ED;
+  ip->i_uid = running->uid;
+  ip->i_gid = running->gid;
+  ip->i_size = BLKSIZE;
+  ip->i_links_count = 2;
+  ip->i_atime = ip->i_ctime = ip->i_mtime = time(0L);
+  ip->i_blocks = 2;
+  ip->i_block[0] = blk;
+  for(int k=1; k<14; k++){
+    ip->i_block[k] = 0;
+  }
+  mip->dirty = 1;
+
+  iput(mip);
+  /*
+    (4).3. make data block 0 of INODE to contain . and .. entries;
+  write to disk block blk.
+  */
+  char buf[BLKSIZE];
+  bzero(buf, BLKSIZE);
+
+  DIIR *dp = (DIR*) buf;
+
+  dp->inode = ino;
+  dp->rec_len = 12;
+  dp->name_len = 1;
+  dp->name[0] = '.';
+  // // make .. entry: pino=parent DIR ino, blk=allocated block
+  dp = (char *)dp + 12;
+  dp->inode = pino;
+  dp->rec_len = BLKSIZE-12;
+  dp->name_len = 12;
+  dp->name[0] = d->name[1] = '.';
+  put_block(dev, blk, buf);
+
+  /*
+  (4).4. enter_child(pmip, ino, basename); which enters
+  (ino, basename) as a dir_entry to the parent INODE;
+  */
+
   // if(pmip != NULL){
   //   printf("[+] Success!")
   // } else {

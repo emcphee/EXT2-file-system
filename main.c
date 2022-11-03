@@ -30,7 +30,9 @@ int  nblocks, ninodes, bmap, imap, iblk;
 
 char line[128], cmd[32], pathname[128]; // input line and its split components
 
+#include "alloc_dealloc.c"
 #include "cd_ls_pwd.c"
+#include "mkdir_creat.c"
 
 int init()
 {

@@ -1,4 +1,6 @@
 #include "util.h"
+
+#include "alloc.c"
 /************* cd_ls_pwd.c file **************/
 int cd()
 {
@@ -31,7 +33,7 @@ int cd()
 // because the books 'mode' variable is from stat but this is from inode
 int ls_file(MINODE *mip, char *name)
 {
-  
+
   char *t1 = "xwrxwrxwr-------";
   char *t2 = "----------------";
   char t[2] = "\0\0";
@@ -45,7 +47,7 @@ int ls_file(MINODE *mip, char *name)
   if(S_ISREG(i_mode)) printf("%c", '-');
   if(S_ISDIR(i_mode)) printf("%c", 'd');
   if(S_ISLNK(i_mode)) printf("%c", 'l');
-  
+
 
   for(i = 8; i >= 0; i--){ // permissions
     if(i_mode & (1 << i)){
@@ -55,7 +57,7 @@ int ls_file(MINODE *mip, char *name)
       printf("%c", t2[i]);
     }
   }
-  
+
   printf("%4d ", mip->INODE.i_links_count); // link count
   printf("%4d ", mip->INODE.i_gid); // gid
   printf("%4d ", mip->INODE.i_uid); // uid
@@ -65,11 +67,11 @@ int ls_file(MINODE *mip, char *name)
   strcpy(ftime, ctime(&time));
   ftime[strlen(ftime) - 1] = 0; // remove newline
   printf("%s ", ftime); // ctime
-  
+
   printf("%-10s ", name); // name
 
   printf("[%d %d]", mip->dev, mip->ino); // [dev, ino]
-  
+
   printf("\n");
 
   // READ Chapter 11.7.3 HOW TO ls
@@ -122,7 +124,7 @@ int ls()
     ino = getino(pathname);
     if(!ino) return -1; // getino returns 0 on error
 
-    
+
     mip = iget(running->cwd->dev, ino); // iget {
 
     if(!mip) return -1; // iget returns 0 on error
@@ -177,4 +179,54 @@ void rpwd(MINODE *wd){
 
   printf("/%s", my_name);
   return;
+}
+
+
+void rmkdir(){
+  // char *pathname = "doge/cat/real";
+  //
+  //
+  char dirname[64];
+  char basename[12];
+  char temp[64];
+  int i = 0;
+
+  strcpy(temp, pathname);
+  char *prev = strtok(temp, "/");
+  char *s = prev;
+  while(s){
+      printf("%s\n", s);
+      prev = s;
+
+      s = strtok(0, "/");
+      if(s == NULL){
+          printf("DIE\n");
+          strcpy(basename, prev);
+      } else {
+          strcat(dirname,  "/");
+          strcat(dirname, prev);
+      }
+      i++;
+  }
+  printf("DIRNAME - %s\n", dirname);
+  printf("BASENAME - %s\n", basename);
+
+  int pino = getino(dirname);
+  // if(pino == 0)
+  // MINODE* pmip = iget(dev, pino);
+
+  if(pino == 0){
+    printf("[!] INO not found");
+    return;
+  } else {
+    MINODE* pmip = iget(dev, pino);
+    if(search(pmip, basename) == 0){
+      printf("[+] Good!\n");
+    }
+  }
+  // if(pmip != NULL){
+  //   printf("[+] Success!")
+  // } else {
+  //   printf("[!] ERROR!\n")
+  // }
 }

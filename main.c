@@ -58,7 +58,7 @@ int init()
 
 // load root INODE and set root pointer to it
 int mount_root()
-{  
+{
   printf("mount_root()\n");
   root = iget(dev, 2);
 }
@@ -86,12 +86,12 @@ int main(int argc, char *argv[ ])
   if (sp->s_magic != 0xEF53){ // checks magic bytes (bytes that identify the file system type)
       printf("magic = %x is not an ext2 filesystem\n", sp->s_magic);
       exit(1);
-  }     
+  }
   printf("EXT2 FS OK\n");
   ninodes = sp->s_inodes_count;
   nblocks = sp->s_blocks_count;
 
-  get_block(dev, 2, buf); 
+  get_block(dev, 2, buf);
   gp = (GD *)buf; // first group descriptor
 
   bmap = gp->bg_block_bitmap; // pulls integer block location of block_bitmap from GD
@@ -99,7 +99,7 @@ int main(int argc, char *argv[ ])
   iblk = gp->bg_inode_table;  // pulls integer block location of inode_table from GD
   printf("bmp=%d imap=%d inode_start = %d\n", bmap, imap, iblk);
 
-  init();  
+  init();
   mount_root();
   printf("root refCount = %d\n", root->refCount);
 
@@ -109,7 +109,7 @@ int main(int argc, char *argv[ ])
   printf("root refCount = %d\n", root->refCount);
 
   // WRTIE code here to create P1 as a USER process
-  
+
   while(1){
     printf("input command : [ls|cd|pwd|quit] ");
     fgets(line, 128, stdin);
@@ -128,6 +128,8 @@ int main(int argc, char *argv[ ])
        cd();
     else if (strcmp(cmd, "pwd")==0)
        pwd(running->cwd);
+    else if(strcmp(cmd, "mkdir") == 0)
+      rmkdir();
     else if (strcmp(cmd, "quit")==0)
        quit();
   }

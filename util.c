@@ -28,13 +28,13 @@ int get_block(int dev, int blk, char *buf)
 {
    lseek(dev, (long)blk*BLKSIZE, 0);
    read(dev, buf, BLKSIZE);
-}   
+}
 
 int put_block(int dev, int blk, char *buf)
 {
    lseek(dev, (long)blk*BLKSIZE, 0);
    write(dev, buf, BLKSIZE);
-}   
+}
 
 int tokenize(char *pathname)
 {
@@ -52,7 +52,7 @@ int tokenize(char *pathname)
     s = strtok(0, "/");
   }
   name[n] = 0;
-  
+
   for (i= 0; i<n; i++)
     printf("%s  ", name[i]);
   printf("\n");
@@ -76,7 +76,7 @@ MINODE *iget(int dev, int ino)
        return mip;
     }
   }
-    
+
   for (i=0; i<NMINODE; i++){
     mip = &minode[i];
     if (mip->refCount == 0){
@@ -85,19 +85,19 @@ MINODE *iget(int dev, int ino)
        mip->dev = dev;
        mip->ino = ino;
 
-       // get INODE of ino into buf[ ]    
+       // get INODE of ino into buf[ ]
        blk    = (ino-1)/8 + iblk; // block number
        offset = (ino-1) % 8; // block offset
 
        //printf("iget: ino=%d blk=%d offset=%d\n", ino, blk, offset);
 
        get_block(dev, blk, buf);    // buf[ ] contains this INODE
-       ip = (INODE *)buf + offset;  // this INODE in buf[ ] 
+       ip = (INODE *)buf + offset;  // this INODE in buf[ ]
        // copy INODE to mp->INODE
        mip->INODE = *ip;
        return mip;
     }
-  }   
+  }
   printf("PANIC: no more free minodes\n");
   return 0;
 }
@@ -108,15 +108,25 @@ void iput(MINODE *mip)  // iput(): release a minode
  char buf[BLKSIZE];
  INODE *ip;
 
- if (mip==0) 
+ if (mip==0)
      return;
 
  mip->refCount--;
- 
+
  if (mip->refCount > 0) return;
- if (!mip->dirty)       return;
- 
+ if (mip->dirty)       return;
+
  /* write INODE back to disk */
+ block = (mip->ino - 1) / 8 +iblock;
+ offset = (mip->ino - 1) * 8;
+
+ get_block(mip->dev, block, buf);
+ ip = (INODE *)buf + offset;
+ *ip = mip->INODE;
+ put_block(mip->dev, block, buf);
+
+ // midalloc(mip)
+ 
  /**************** NOTE ******************************
   For mountroot, we never MODIFY any loaded INODE
                  so no need to write it back
@@ -124,11 +134,11 @@ void iput(MINODE *mip)  // iput(): release a minode
 
   Write YOUR code here to write INODE back to disk
  *****************************************************/
-} 
+}
 
 int search(MINODE *mip, char *name)
 {
-   int i; 
+   int i;
    char *cp, c, sbuf[BLKSIZE], temp[256];
    DIR *dp;
    INODE *ip;
@@ -146,7 +156,7 @@ int search(MINODE *mip, char *name)
    while (cp < sbuf + BLKSIZE){
      strncpy(temp, dp->name, dp->name_len); // dp->name is NOT a string
      temp[dp->name_len] = 0;                // temp is a STRING
-     printf("%4d  %4d  %4d    %s\n", 
+     printf("%4d  %4d  %4d    %s\n",
 	    dp->inode, dp->rec_len, dp->name_len, temp); // print temp !!!
 
      if (strcmp(temp, name)==0){            // compare name with temp !!!
@@ -160,7 +170,7 @@ int search(MINODE *mip, char *name)
    return 0;
 }
 
-int getino(char *pathname) // return ino of pathname   
+int getino(char *pathname) // return ino of pathname
 {
   int i, ino, blk, offset;
   char buf[BLKSIZE];
@@ -170,7 +180,7 @@ int getino(char *pathname) // return ino of pathname
   printf("getino: pathname=%s\n", pathname);
   if (strcmp(pathname, "/")==0)
       return 2;
-  
+
   // starting mip = root OR CWD
   if (pathname[0]=='/')
      mip = root;
@@ -178,13 +188,13 @@ int getino(char *pathname) // return ino of pathname
      mip = running->cwd;
 
   mip->refCount++;         // because we iput(mip) later
-  
+
   tokenize(pathname);
 
   for (i=0; i<n; i++){
       printf("===========================================\n");
       printf("getino: i=%d name[%d]=%s\n", i, i, name[i]);
- 
+
       ino = search(mip, name[i]);
 
       if (ino==0){
@@ -202,7 +212,7 @@ int getino(char *pathname) // return ino of pathname
 }
 
 // These 2 functions are needed for pwd()
-int findmyname(MINODE *parent, u32 myino, char myname[ ]) 
+int findmyname(MINODE *parent, u32 myino, char myname[ ])
 {
   int i;
   char *cp, temp[256], sbuf[BLKSIZE];

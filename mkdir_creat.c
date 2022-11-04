@@ -69,6 +69,8 @@ void rmkdir(){
   char temp[64] = {0};
   int i = 0;
 
+  MINODE* pmip;
+
   strcpy(temp, pathname);
   char *prev = strtok(temp, "/");
   char *s = prev;
@@ -97,7 +99,7 @@ void rmkdir(){
     printf("[!] INO not found\n");
     return;
   } else {
-    MINODE* pmip = iget(dev, pino);
+    pmip = iget(dev, pino);
     if(search(pmip, basename) == 0){
       printf("[+] Good!\n");
     } else {
@@ -106,19 +108,19 @@ void rmkdir(){
     }
   }
 
-  // (4).1. Allocate an INODE and a disk block:
+  // // (4).1. Allocate an INODE and a disk block:
   int ino = ialloc(dev);
   int blk = balloc(dev);
-
-  /*
-  (4).2. mip = iget(dev, ino) // load INODE into a minode
-    initialize mip->INODE as a DIR INODE;
-    mip->INODE.i_block[0] = blk; other i_block[ ] = 0;
-    mark minode modified (dirty);
-    iput(mip); // write INODE back to disk
-  */
-
-  MINODE *mip = iget(dev, ino);
+  //
+  // /*
+  // (4).2. mip = iget(dev, ino) // load INODE into a minode
+  //   initialize mip->INODE as a DIR INODE;
+    // mip->INODE.i_block[0] = blk; other i_block[ ] = 0;
+    // mark minode modified (dirty);
+    // iput(pmip); // write INODE back to disk
+  // */
+  //
+  MINODE *mip = iget(root->dev, ino);
   INODE *ip = &mip->INODE;
 
   ip->i_mode = 0x41ED;
@@ -135,13 +137,13 @@ void rmkdir(){
   mip->dirty = 1;
 
   iput(mip);
-  /*
-    (4).3. make data block 0 of INODE to contain . and .. entries;
-  write to disk block blk.
-  */
+  // /*
+  //   (4).3. make data block 0 of INODE to contain . and .. entries;
+  // write to disk block blk.
+  // */
   char buf[BLKSIZE];
   bzero(buf, BLKSIZE);
-
+  get_block(dev, blk, buf);
   DIR *dp = (DIR*) buf;
 
   dp->inode = ino;
@@ -156,17 +158,18 @@ void rmkdir(){
   dp->name[0] = dp->name[1] = '.';
   put_block(dev, blk, buf);
 
-  /*
-  (4).4. enter_child(pmip, ino, basename); which enters
-  (ino, basename) as a dir_entry to the parent INODE;
-  */
+  // /*
+  // (4).4. enter_child(pmip, ino, basename); which enters
+  // (ino, basename) as a dir_entry to the parent INODE;
+  // */
   enter_name(mip, ino, basename);
-
-  // if(pmip != NULL){
-  //   printf("[+] Success!")
-  // } else {
-  //   printf("[!] ERROR!\n")
-  // }
+  //
+  // // if(pmip != NULL){
+  // //   printf("[+] Success!")
+  // // } else {
+  // //   printf("[!] ERROR!\n")
+  // // }
+  iput(pmip);
 }
 
 // void creat(){

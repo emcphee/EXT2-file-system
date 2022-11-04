@@ -64,26 +64,36 @@ void rmkdir(){
   //
   printf("PATHNAME - %s\n", pathname);
   //
-  char dirname[64] = {0};
-  char basename[12] = {0};
-  char temp[64] = {0};
+  char dirname[128];
+  char basename[128];
+  char temp[128];
   int i = 0;
+
+  dirname[0] = 0;
+  basename[0] = 0;
 
   MINODE* pmip;
 
   strcpy(temp, pathname);
   char *prev = strtok(temp, "/");
   char *s = prev;
+  // check for special case where / is at start of path meaning to start from root
+  if(s && s[0] == 0){ // if delim is / and first char is / s will equal empty string
+    printf("starting from root\n");
+    s = strtok(temp, '/');
+    strcat(dirname, "/");
+    i++; // not sure what i is for but I increment it here (?)
+  }
   while(s){
       printf("%s\n", s);
       prev = s;
 
       s = strtok(0, "/");
       if(s == NULL){
-          printf("DIE\n");
           strcpy(basename, prev);
       } else {
-          strcat(dirname,  "/");
+          // this if statement is super bodgy but it works
+          if( !(i == 1 && dirname[0] == '/') ) strcat(dirname,  "/");
           strcat(dirname, prev);
       }
       i++;
@@ -91,7 +101,13 @@ void rmkdir(){
   printf("DIRNAME - %s\n", dirname);
   printf("BASENAME - %s\n", basename);
 
-  int pino = getino(dirname);
+  int pino;
+  if(strlen(dirname) == 0){
+    pino = running->cwd->ino;
+  }else{
+    pino = getino(dirname);
+  }
+
   // if(pino == 0)
   // MINODE* pmip = iget(dev, pino);
 

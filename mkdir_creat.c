@@ -1,5 +1,5 @@
 
-#include "alloc_dealloc.c"
+
 
 void enter_name(MINODE *pip, int ino, char *name){
   char buf[BLKSIZE];
@@ -160,7 +160,7 @@ void rmkdir(){
   (4).4. enter_child(pmip, ino, basename); which enters
   (ino, basename) as a dir_entry to the parent INODE;
   */
-  enter_child(mip, ino, basename);
+  enter_name(mip, ino, basename);
 
   // if(pmip != NULL){
   //   printf("[+] Success!")
@@ -169,81 +169,81 @@ void rmkdir(){
   // }
 }
 
-void creat(){
-  // char *pathname = "doge/cat/real";
-  //
-  printf("PATHNAME - %s\n", pathname);
-  //
-  char dirname[64] = {0};
-  char basename[12] = {0};
-  char temp[64] = {0};
-  int i = 0;
-
-  strcpy(temp, pathname);
-  char *prev = strtok(temp, "/");
-  char *s = prev;
-  while(s){
-      printf("%s\n", s);
-      prev = s;
-
-      s = strtok(0, "/");
-      if(s == NULL){
-          printf("DIE\n");
-          strcpy(basename, prev);
-      } else {
-          strcat(dirname,  "/");
-          strcat(dirname, prev);
-      }
-      i++;
-  }
-  printf("DIRNAME - %s\n", dirname);
-  printf("BASENAME - %s\n", basename);
-
-  int pino = getino(dirname);
-  // if(pino == 0)
-  // MINODE* pmip = iget(dev, pino);
-
-  if(pino == 0){
-    printf("[!] INO not found\n");
-    return;
-  } else {
-    MINODE* pmip = iget(dev, pino);
-    if(search(pmip, basename) == 0){
-      printf("[+] Good!\n");
-    } else {
-      printf("[!] Error dir already exists!\n");
-      return;
-    }
-  }
-
-  // (4).1. Allocate an INODE and a disk block:
-  int ino = ialloc(dev);
-  int blk = balloc(dev);
-
-  /*
-  (4).2. mip = iget(dev, ino) // load INODE into a minode
-    initialize mip->INODE as a DIR INODE;
-    mip->INODE.i_block[0] = blk; other i_block[ ] = 0;
-    mark minode modified (dirty);
-    iput(mip); // write INODE back to disk
-  */
-
-  MINODE *mip = iget(dev, ino);
-  INODE *ip = &mip->INODE;
-
-  ip->i_mode = 0x81A4;
-  ip->i_uid = running->uid;
-  ip->i_gid = running->gid;
-  ip->i_size = BLKSIZE;
-  ip->i_links_count = 1;
-  ip->i_atime = ip->i_ctime = ip->i_mtime = time(0L);
-  ip->i_blocks = 2;
-  ip->i_block[0] = 0;
-  for(int k=1; k<15; k++){
-    ip->i_block[k] = 0;
-  }
-  mip->dirty = 1;
-
-  iput(mip);
-  enter_child(mip, ino, basename);
-}
+// void creat(){
+//   // char *pathname = "doge/cat/real";
+//   //
+//   printf("PATHNAME - %s\n", pathname);
+//   //
+//   char dirname[64] = {0};
+//   char basename[12] = {0};
+//   char temp[64] = {0};
+//   int i = 0;
+//
+//   strcpy(temp, pathname);
+//   char *prev = strtok(temp, "/");
+//   char *s = prev;
+//   while(s){
+//       printf("%s\n", s);
+//       prev = s;
+//
+//       s = strtok(0, "/");
+//       if(s == NULL){
+//           printf("DIE\n");
+//           strcpy(basename, prev);
+//       } else {
+//           strcat(dirname,  "/");
+//           strcat(dirname, prev);
+//       }
+//       i++;
+//   }
+//   printf("DIRNAME - %s\n", dirname);
+//   printf("BASENAME - %s\n", basename);
+//
+//   int pino = getino(dirname);
+//   // if(pino == 0)
+//   // MINODE* pmip = iget(dev, pino);
+//
+//   if(pino == 0){
+//     printf("[!] INO not found\n");
+//     return;
+//   } else {
+//     MINODE* pmip = iget(dev, pino);
+//     if(search(pmip, basename) == 0){
+//       printf("[+] Good!\n");
+//     } else {
+//       printf("[!] Error dir already exists!\n");
+//       return;
+//     }
+//   }
+//
+//   // (4).1. Allocate an INODE and a disk block:
+//   int ino = ialloc(dev);
+//   int blk = balloc(dev);
+//
+//   /*
+//   (4).2. mip = iget(dev, ino) // load INODE into a minode
+//     initialize mip->INODE as a DIR INODE;
+//     mip->INODE.i_block[0] = blk; other i_block[ ] = 0;
+//     mark minode modified (dirty);
+//     iput(mip); // write INODE back to disk
+//   */
+//
+//   MINODE *mip = iget(dev, ino);
+//   INODE *ip = &mip->INODE;
+//
+//   ip->i_mode = 0x81A4;
+//   ip->i_uid = running->uid;
+//   ip->i_gid = running->gid;
+//   ip->i_size = BLKSIZE;
+//   ip->i_links_count = 1;
+//   ip->i_atime = ip->i_ctime = ip->i_mtime = time(0L);
+//   ip->i_blocks = 2;
+//   ip->i_block[0] = 0;
+//   for(int k=1; k<15; k++){
+//     ip->i_block[k] = 0;
+//   }
+//   mip->dirty = 1;
+//
+//   iput(mip);
+//   enter_child(mip, ino, basename);
+// }

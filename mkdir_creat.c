@@ -160,7 +160,7 @@ void rmkdir(){
   (4).4. enter_child(pmip, ino, basename); which enters
   (ino, basename) as a dir_entry to the parent INODE;
   */
-  enter_child(mip, ino, basename);
+  enter_name(mip, ino, basename);
 
   // if(pmip != NULL){
   //   printf("[+] Success!")

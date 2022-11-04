@@ -1,5 +1,5 @@
 
-// #include "alloc_dealloc.c"
+#include "alloc_dealloc.c"
 
 void enter_name(MINODE *pip, int ino, char *name){
   char buf[BLKSIZE];
@@ -24,8 +24,37 @@ void enter_name(MINODE *pip, int ino, char *name){
 
     int remaining = dp->rec_len - ideal_len;
     if(remaining >= need_len){
+      dp->rec_len = ideal_len;
+
+      cp += dp->rec_len;
+      dp = (DIR *)cp;
+
+      dp->inode = ino;
+      strcpy(dp->name, name);
+      dp->name_len = strlen(name);
+      dp->rec_len = remaining;
+
+      put_block(dev, pip->INODE.i_block[i], buf);
+      return 0;
       //enter the new entry as the LAST entry and
       //trim the previous entry rec_len to its ideal_length;
+    } else {
+      pip->INODE.i_size = BLKSIZE;
+      int bno = balloc(dev);
+      pip->INODE.i_block[i] = bno;
+      pip->dirty = 1;
+
+      get_block(dev, bno, buf);
+      dp = (DIR*) buf;
+      cp = buf;
+
+      dp->name_len = strlen(name);
+      strcpy(dp->name, name);
+      dp->inode = ino;
+      dp->rec_len = BLKSIZE;
+
+      put_block(dev, bno, buf);
+      return 1;
     }
   }
 }
@@ -131,6 +160,7 @@ void rmkdir(){
   (4).4. enter_child(pmip, ino, basename); which enters
   (ino, basename) as a dir_entry to the parent INODE;
   */
+  enter_child(mip, ino, basename);
 
   // if(pmip != NULL){
   //   printf("[+] Success!")

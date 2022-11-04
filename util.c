@@ -117,7 +117,7 @@ void iput(MINODE *mip)  // iput(): release a minode
  if (mip->dirty)       return;
 
  /* write INODE back to disk */
- block = (mip->ino - 1) / 8 +iblock;
+ block = (mip->ino - 1) / 8 +block;
  offset = (mip->ino - 1) * 8;
 
  get_block(mip->dev, block, buf);
@@ -126,7 +126,7 @@ void iput(MINODE *mip)  // iput(): release a minode
  put_block(mip->dev, block, buf);
 
  // midalloc(mip)
- 
+
  /**************** NOTE ******************************
   For mountroot, we never MODIFY any loaded INODE
                  so no need to write it back

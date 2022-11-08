@@ -137,7 +137,7 @@ void rmkdir(){
   // */
   //
   MINODE *mip = iget(root->dev, ino);
-  INODE *ip = &mip->INODE;
+  INODE *ip = &(mip->INODE);
 
   ip->i_mode = 0x41ED;
   ip->i_uid = running->uid;
@@ -151,7 +151,6 @@ void rmkdir(){
     ip->i_block[k] = 0;
   }
   mip->dirty = 1;
-
   iput(mip);
   // /*
   //   (4).3. make data block 0 of INODE to contain . and .. entries;
@@ -161,7 +160,6 @@ void rmkdir(){
   bzero(buf, BLKSIZE);
   get_block(dev, blk, buf);
   DIR *dp = (DIR*) buf;
-
   dp->inode = ino;
   dp->rec_len = 12;
   dp->name_len = 1;
@@ -170,7 +168,7 @@ void rmkdir(){
   dp = (char *)dp + 12;
   dp->inode = pino;
   dp->rec_len = BLKSIZE-12;
-  dp->name_len = 12;
+  dp->name_len = 2;
   dp->name[0] = dp->name[1] = '.';
   put_block(dev, blk, buf);
 
@@ -178,7 +176,7 @@ void rmkdir(){
   // (4).4. enter_child(pmip, ino, basename); which enters
   // (ino, basename) as a dir_entry to the parent INODE;
   // */
-  enter_name(mip, ino, basename);
+  enter_name(pmip, ino, basename);
   //
   // // if(pmip != NULL){
   // //   printf("[+] Success!")

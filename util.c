@@ -114,26 +114,29 @@ void iput(MINODE *mip)  // iput(): release a minode
  mip->refCount--;
 
  if (mip->refCount > 0) return;
- if (mip->dirty)       return;
+ if (!mip->dirty)       return;
 
  /* write INODE back to disk */
- block = (mip->ino - 1) / 8 +block;
- offset = (mip->ino - 1) * 8;
+ block = (mip->ino - 1) / 8 + iblk;
+ offset = (mip->ino - 1) % 8;
 
  get_block(mip->dev, block, buf);
  ip = (INODE *)buf + offset;
  *ip = mip->INODE;
  put_block(mip->dev, block, buf);
 
- // midalloc(mip)
+ midalloc(mip);
 
- /**************** NOTE ******************************
-  For mountroot, we never MODIFY any loaded INODE
-                 so no need to write it back
-  FOR LATER WROK: MUST write INODE back to disk if refCount==0 && DIRTY
+}
 
-  Write YOUR code here to write INODE back to disk
- *****************************************************/
+// this seems unfinished but book is not clear
+int midalloc(MINODE* mip){
+  if(!mip){
+    printf("Error: midalloc() passed a null pointer.\n");
+    return -1;
+  }
+  mip->refCount = 0;
+  return 0;
 }
 
 int search(MINODE *mip, char *name)

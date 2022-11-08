@@ -13,14 +13,15 @@ void enter_name(MINODE *pip, int ino, char *name){
     DIR *dp = (DIR *)buf;
     char *cp = buf;
 
-    int ideal_len = 4*((8 + dp->name_len + 3) /4);
-    int need_len = 4*((8 + strlen(name) + 3) /4);
+    int need_len = 4*((8 + strlen(name) + 3) /4); // record length of new entry
 
 
     while (cp + dp->rec_len < buf + BLKSIZE){
       cp += dp->rec_len;
       dp = (DIR *)cp;
     }
+
+    int ideal_len = 4*((8 + dp->name_len + 3) /4); // moved this down here
 
     int remaining = dp->rec_len - ideal_len;
     if(remaining >= need_len){
@@ -82,13 +83,13 @@ void rmkdir(){
     printf("starting from root\n");
     s = strtok(temp, '/');
     strcat(dirname, "/");
-    i++; // not sure what i is for but I increment it here (?)
+    i++;
   }
   while(s){
       printf("%s\n", s);
       prev = s;
 
-      s = strtok(0, "/");
+      s = strtok(0, '/');
       if(s == NULL){
           strcpy(basename, prev);
       } else {
@@ -117,7 +118,7 @@ void rmkdir(){
   } else {
     pmip = iget(dev, pino);
     if(search(pmip, basename) == 0){
-      printf("[+] Good!\n");
+      printf("[+] Good! file doesn't already exist.\n");
     } else {
       printf("[!] Error dir already exists!\n");
       return;
@@ -147,7 +148,7 @@ void rmkdir(){
   ip->i_atime = ip->i_ctime = ip->i_mtime = time(0L);
   ip->i_blocks = 2;
   ip->i_block[0] = blk;
-  for(int k=1; k<14; k++){
+  for(int k=1; k<14; k++){ // should this zero last 14 blocks (?)
     ip->i_block[k] = 0;
   }
   mip->dirty = 1;

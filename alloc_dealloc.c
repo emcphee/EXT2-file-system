@@ -115,11 +115,11 @@ int balloc(int dev)
   for (i=0; i < nblocks; i++){
     if (tst_bit(buf, i)==0){
         set_bit(buf, i);
-	put_block(dev, bmap, buf);
+    put_block(dev, bmap, buf);
 
-	decFreeBlocks(dev);
+    decFreeBlocks(dev);
 
-	printf("allocated block num = %d\n", i); // i think blocks count from 0 ? if not change to +1
+    printf("allocated block num = %d\n", i); // i think blocks count from 0 ? if not change to +1
         return i;
     }
   }

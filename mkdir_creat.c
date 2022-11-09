@@ -37,17 +37,23 @@ int pathname_to_dir_and_base(char* pathname, char* dir, char* base){
 // takes in a MINODE pointer to parent, the inode number of the child, and the name of the child, and enters it as a DIR entry into the parent
 void enter_name(MINODE *pip, int ino, char *name){
   char buf[BLKSIZE];
+  int i, need_len, ideal_len, remaining, bno, free_block;
+  DIR *dp;
+  char *cp;
 
-  for(int i=0; i<12; i++){
+  free_block = 0;
+
+  for(i=0; i<12; i++){
     if(pip->INODE.i_block[i] == 0){
+      free_block = i;
       break;
     }
 
     get_block(pip->dev, pip->INODE.i_block[i], buf);
-    DIR *dp = (DIR *)buf;
-    char *cp = buf;
+    dp = (DIR *)buf;
+    cp = buf;
 
-    int need_len = 4*((8 + strlen(name) + 3) /4); // record length of new entry
+    need_len = 4*((8 + strlen(name) + 3) /4); // record length of new entry
 
 
     while (cp + dp->rec_len < buf + BLKSIZE){
@@ -55,17 +61,17 @@ void enter_name(MINODE *pip, int ino, char *name){
       dp = (DIR *)cp;
     }
 
-    int ideal_len = 4*((8 + dp->name_len + 3) /4); // moved this down here
+    ideal_len = 4*((8 + dp->name_len + 3) /4); // ideal length of dp
 
-    int remaining = dp->rec_len - ideal_len;
-    if(remaining >= need_len){
+    remaining = dp->rec_len - ideal_len;
+    if(remaining >= need_len){ // we can insert the DIR entry after the last entry
       dp->rec_len = ideal_len;
 
       cp += dp->rec_len;
       dp = (DIR *)cp;
 
       dp->inode = ino;
-      strcpy(dp->name, name);
+      strncpy(dp->name, name, strlen(name));
       dp->name_len = strlen(name);
       dp->rec_len = remaining;
 
@@ -73,9 +79,11 @@ void enter_name(MINODE *pip, int ino, char *name){
       return 0;
       //enter the new entry as the LAST entry and
       //trim the previous entry rec_len to its ideal_length;
-    } else {
-      pip->INODE.i_size = BLKSIZE;
-      int bno = balloc(dev);
+    }
+  }
+  if(free_block != 0){
+      pip->INODE.i_size += BLKSIZE;
+      bno = balloc(dev);
       pip->INODE.i_block[i] = bno;
       pip->dirty = 1;
 
@@ -84,14 +92,16 @@ void enter_name(MINODE *pip, int ino, char *name){
       cp = buf;
 
       dp->name_len = strlen(name);
-      strcpy(dp->name, name);
+      strncpy(dp->name, name, strlen(name));
       dp->inode = ino;
       dp->rec_len = BLKSIZE;
 
       put_block(dev, bno, buf);
       return 1;
+    }else{
+      printf("PANIC! no free blocks available to enter name\n");
+      return -1;
     }
-  }
 }
 
 void rmkdir(){
@@ -112,7 +122,7 @@ void rmkdir(){
 
   ret = pathname_to_dir_and_base(pathname, dir, base); // breaks pathname into dir and base
   if(ret){
-    print("Error: invalid pathname\n");
+    printf("Error: invalid pathname\n");
     return;
   }
   // dirname and basename should not be separated so we print them to verify

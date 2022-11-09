@@ -133,6 +133,8 @@ int main(int argc, char *argv[ ])
        pwd(running->cwd);
     else if(strcmp(cmd, "mkdir") == 0)
       mymkdir();
+    else if(strcmp(cmd, "creat") == 0)
+      mycreat();
     else if (strcmp(cmd, "quit")==0)
        quit();
   }

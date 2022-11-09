@@ -199,97 +199,77 @@ void mymkdir(){
 }
 
 
-// void mycreat(){
-//   char dir[128], base[128], temp[128];
-//   int pino, ino, blk;
-//   MINODE *pmip, *mip;
-//   INODE *ip;
-//   DIR *dp;
-//   int ret;
-//   int i = 0;
+void mycreat(){
+  char dir[128], base[128], temp[128];
+  int pino, ino;
+  MINODE *pmip, *mip;
+  INODE *ip;
+  int ret;
+  int i = 0;
 
-//   initialize both to empty strings
-//   dir[0] = 0;
-//   base[0] = 0;
+  //initialize both to empty strings
+  dir[0] = 0;
+  base[0] = 0;
 
 
-//   input of pathname to create dir, consisting of dirname and basename
-//   printf("PATHNAME - %s\n", pathname);
+  //input of pathname to create dir, consisting of dirname and basename
+  printf("PATHNAME - %s\n", pathname);
 
-//   ret = pathname_to_dir_and_base(pathname, dir, base); // breaks pathname into dir and base
-//   if(ret){
-//     printf("Error: invalid pathname\n");
-//     return;
-//   }
-//   dirname and basename should not be separated so we print them to verify
-//   printf("DIRNAME - %s\n", dir);
-//   printf("BASENAME - %s\n", base);
-
-  
-//   if(strlen(dir) == 0){
-//     pino = running->cwd->ino;
-//   }else{
-//     pino = getino(dir);
-//   }
-
-//   if(pino == 0){
-//     printf("[!] INO not found\n");
-//     return;
-//   } else {
-//     pmip = iget(dev, pino);
-//     if(search(pmip, base) == 0){
-//       printf("[+] Good! file doesn't already exist.\n");
-//     } else {
-//       printf("[!] Error dir already exists!\n");
-//       return;
-//     }
-//   }
+  ret = pathname_to_dir_and_base(pathname, dir, base); // breaks pathname into dir and base
+  if(ret){
+    printf("Error: invalid pathname\n");
+    return;
+  }
+  //dirname and basename should not be separated so we print them to verify
+  printf("DIRNAME - %s\n", dir);
+  printf("BASENAME - %s\n", base);
 
   
-//   ino = ialloc(dev);
-//   blk = balloc(dev);
+  if(strlen(dir) == 0){
+    pino = running->cwd->ino;
+  }else{
+    pino = getino(dir);
+  }
 
-//   mip = iget(root->dev, ino);
-//   ip = &(mip->INODE);
+  if(pino == 0){
+    printf("[!] INO not found\n");
+    return;
+  } else {
+    pmip = iget(dev, pino);
+    if(search(pmip, base) == 0){
+      printf("[+] Good! file doesn't already exist.\n");
+    } else {
+      printf("[!] Error dir already exists!\n");
+      return;
+    }
+  }
 
-//   ip->i_mode = 0x41ED;
-//   ip->i_uid = running->uid;
-//   ip->i_gid = running->gid;
-//   ip->i_size = BLKSIZE;
-//   ip->i_links_count = 2;
-//   ip->i_atime = ip->i_ctime = ip->i_mtime = time(0L);
-//   ip->i_blocks = 2;
-//   ip->i_block[0] = blk;
-//   for(int k=1; k<15; k++){
-//     ip->i_block[k] = 0;
-//   }
-//   mip->dirty = 1;
-//   iput(mip);
-//   /*
-//     (4).3. make data block 0 of INODE to contain . and .. entries;
-//   write to disk block blk.
-//   */
-//   char buf[BLKSIZE];
-//   bzero(buf, BLKSIZE);
-//   get_block(dev, blk, buf);
-//   dp = (DIR*) buf;
-//   dp->inode = ino;
-//   dp->rec_len = 12;
-//   dp->name_len = 1;
-//   dp->name[0] = '.';
-//   make .. entry: pino=parent DIR ino, blk=allocated block
-//   dp = (char *)dp + 12;
-//   dp->inode = pino;
-//   dp->rec_len = BLKSIZE-12;
-//   dp->name_len = 2;
-//   dp->name[0] = dp->name[1] = '.';
-//   put_block(dev, blk, buf);
+  
+  ino = ialloc(dev);
 
-//   ret = enter_name(pmip, ino, base);
-//   if(ret){
-//     printf("Error: something went very wrong in mkdir. Could not add new dir name to parent.\n");
-//     return;
-//   }
+  mip = iget(root->dev, ino);
+  ip = &(mip->INODE);
 
-//   iput(pmip);
-// }
+  ip->i_mode = 0x81A4; // 0644
+  ip->i_uid = running->uid;
+  ip->i_gid = running->gid;
+  ip->i_size = 0;
+  ip->i_links_count = 1;
+  ip->i_atime = ip->i_ctime = ip->i_mtime = time(0L);
+  ip->i_blocks = 0;
+  ip->i_block[0] = 0;
+  for(int k=1; k<15; k++){
+    ip->i_block[k] = 0;
+  }
+  mip->dirty = 1;
+  iput(mip);
+  
+
+  ret = enter_name(pmip, ino, base);
+  if(ret){
+    printf("Error: something went very wrong in creat. Could not add new dir name to parent.\n");
+    return;
+  }
+
+  iput(pmip);
+}

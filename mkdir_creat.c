@@ -1,36 +1,37 @@
 
 
 // takes in a pathname and two EMPTY STRING pointers dir and base. Tokenizes pathname (nondestructively) and fills the two strings
-void pathname_to_dir_and_base(char* pathname, char* dir, char* base){
+int pathname_to_dir_and_base(char* pathname, char* dir, char* base){
   char temp[128];
-  char *prev, *s; // temps for tokenization
-  int i = 0;
+  int i;
+  int found = 0;
 
-  strcpy(temp, pathname); // copy pathname to temp for tokenization
+  strcpy(temp, pathname);
 
-  s = strtok(temp, "/"); // gets first token
-
-  // check for special case where / is at start of path meaning to start from root
-  if(s && s[0] == 0){ // if delim is / and first char is / s will equal empty string
-    printf("starting from root\n");
-    s = strtok(temp, '/');
-    strcat(*dir, "/");
-    i++;
+  if(strlen(temp) == 0) return -1; // empty path, dir and base will stay empty
+  for(i = strlen(temp) - 1; i >= 1; i--){ // remove trailing '/'s
+    if(temp[i] != '/') break;
+    temp[i] = 0;
   }
-  while(s){
-      printf("%s\n", s);
-      prev = s;
 
-      s = strtok(0, '/');
-      if(s == NULL){
-          strcpy(base, prev);
-      } else {
-          // this if statement is super bodgy but it works
-          if( !(i == 1 && dir[0] == '/') ) strcat(dir,  "/");
-          strcat(dir, prev);
-      }
-      i++;
+  if(strlen(temp) == 0) return -1; // empty path, dir and base will stay empty
+
+  for(i = strlen(temp) - 1; i >= 1; i--){
+    if(temp[i] == '/'){
+      found = 1;
+      temp[i] = 0;
+      break;
+    }
   }
+
+  if(found){
+    strcpy(base, (temp + i + 1));
+    strcpy(dir, temp);
+  }else{
+    strcpy(base, temp);
+  }
+
+  return 0;
 }
 
 // takes in a MINODE pointer to parent, the inode number of the child, and the name of the child, and enters it as a DIR entry into the parent
@@ -98,6 +99,7 @@ void rmkdir(){
   char *prev, *s; // temps for tokenization
   int pino; // parent inode number
   MINODE* pmip; // parent memory inode pointer
+  int ret; // for checking return values
   int i = 0; // tokenization var
 
   // initialize both to empty strings
@@ -108,8 +110,11 @@ void rmkdir(){
   // input of pathname to create dir, consisting of dirname and basename
   printf("PATHNAME - %s\n", pathname);
 
-  pathname_to_dir_and_base(pathname, dir, base); // breaks pathname into dir and base
-  
+  ret = pathname_to_dir_and_base(pathname, dir, base); // breaks pathname into dir and base
+  if(ret){
+    print("Error: invalid pathname\n");
+    return;
+  }
   // dirname and basename should not be separated so we print them to verify
   printf("DIRNAME - %s\n", dir);
   printf("BASENAME - %s\n", base);

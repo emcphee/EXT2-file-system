@@ -39,10 +39,14 @@ void rmchild(MINODE* pmip, char dir_name[]){
   int i,j;
   int blk_to_remove;
   char *cp, temp[256], sbuf[BLKSIZE];
-  DIR *dp;
+  int len_to_cpy;
+  char tbuf[1024];
+  DIR *dp, *pdp, *lastdp;
+  char lastcp;
   for(i = 0; i < 12; i++){ // i from 0 to 11 because we are only doing direct blocks
 
     get_block(pmip->dev, pmip->INODE.i_block[i], sbuf);
+    pdp = (DIR*)sbuf;
     dp = (DIR*)sbuf;
     cp = sbuf; // byte pointer
 
@@ -53,7 +57,7 @@ void rmchild(MINODE* pmip, char dir_name[]){
         // dp is now the directory entry we need to remove and i is the iblock number
         goto exit_loops;
       }
-
+      pdp = dp;
       cp += dp->rec_len; // increment rec_len number of bytes
       dp = (DIR*)cp; // set dp to point to next dir
     }
@@ -76,10 +80,22 @@ void rmchild(MINODE* pmip, char dir_name[]){
     return;
   }
   if(cp + dp->rec_len == sbuf + BLKSIZE){ // this dir entry is the last entry in the block, just remove it and set rec_len of previous to fill the block
+    pdp->rec_len += dp->rec_len;
     return;
   }
-  // last option is that the dir entry is on a block with more entries after it, so the entries have to be pushed back when its removed.
-  // do here!!
+// last option is that the dir entry is on a block with more entries after it, so the entries have to be pushed back when its removed.
+  lastcp = cp;
+  lastdp = dp;
+  while(lastcp < sbuf + BLKSIZE){ // while cp is not outside block starting at sbuf
+      lastcp += lastdp->rec_len; // increment rec_len number of bytes
+      pdp = lastdp;
+      lastdp = (DIR*)lastcp; // set dp to point to next dir
+    }
+  lastdp = pdp;
+  lastdp->rec_len += dp->rec_len;
+  len_to_cpy = (sbuf + BLKSIZE) - (cp + dp->rec_len);
+  strncpy(tbuf, (cp + dp->rec_len), len_to_cpy);
+  strncpy(cp, tbuf, len_to_cpy);
 }
 
 void myrmdir(){
@@ -95,29 +111,32 @@ void myrmdir(){
   mip = iget(dev, ino);
   if(!S_ISDIR(mip->INODE.i_mode)){
     printf("Error: Not a directory.\n");
+    iput(mip);
     return;
   }
   if(mip->refCount > 1){
     printf("Error: Directory is busy.\n");
+    iput(mip);
     return;
   }
   if(!check_empty(mip)){
     printf("Error: Directory is not empty.\n");
+    iput(mip);
     return;
   }
-  pino = findino(mip, &ino);
 
+  pino = findino(mip, &ino);
   pmip = iget(mip->dev, pino);
 
   findmyname(pmip, ino, dir_name);
-
+  // works perfect until here... maybe a problem in rmchild()
   rmchild(pmip, dir_name);
-
   pmip->INODE.i_links_count--;
   pmip->dirty = 1;
 
-  iput(pmip);
+  iput(pmip); // im thinking iput is not actually putting for some reason :/
   
   bdalloc(mip->dev, mip->INODE.i_block[0]);
   idalloc(mip->dev, mip->ino);
+  iput(mip);
 }

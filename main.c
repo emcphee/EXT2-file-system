@@ -34,6 +34,7 @@ char line[128], cmd[32], pathname[128]; // input line and its split components
 #include "cd_ls_pwd.c"
 #include "mkdir_creat.c"
 #include "alloc_dealloc.c"
+#include "rmdir.c"
 
 int init()
 {

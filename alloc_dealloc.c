@@ -45,6 +45,22 @@ int incFreeInodes(int dev)
   put_block(dev, 2, buf);
 }
 
+int incFreeBlocks(int dev)
+{
+  char buf[BLKSIZE];
+
+  // inc free inodes count in SUPER and GD
+  get_block(dev, 1, buf);
+  sp = (SUPER *)buf;
+  sp->s_free_blocks_count++;
+  put_block(dev, 1, buf);
+
+  get_block(dev, 2, buf);
+  gp = (GD *)buf;
+  gp->bg_free_blocks_count++;
+  put_block(dev, 2, buf);
+}
+
 int decFreeInodes(int dev)
 {
   char buf[BLKSIZE];
@@ -145,4 +161,26 @@ int idalloc(int dev, int ino)
 
   // update free inode count in SUPER and GD
   incFreeInodes(dev);
+}
+
+int bdalloc(int dev, int blk)
+{
+  int i;
+  char buf[BLKSIZE];
+
+  if (blk > nblocks){
+    printf("blocknumber %d out of range\n", blk);
+    return -1;
+  }
+
+  // get inode bitmap block
+  get_block(dev, bmap, buf);
+  clr_bit(buf, blk-1);
+
+  // write buf back
+  put_block(dev, bmap, buf);
+
+  // update free inode count in SUPER and GD
+  incFreeBlocks(dev);
+  return 0;
 }

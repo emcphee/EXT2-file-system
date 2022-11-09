@@ -194,7 +194,7 @@ void mymkdir(){
     printf("Error: something went very wrong in mkdir. Could not add new dir name to parent.\n");
     return;
   }
-
+  pmip->INODE.i_links_count++; // increase links for a new child dir
   iput(pmip);
 }
 

@@ -40,32 +40,28 @@ void rmchild(MINODE* pmip, char dir_name[]){
   int blk_to_remove;
   char *cp, temp[256], sbuf[BLKSIZE];
   int len_to_cpy;
-  char tbuf[1024];
-  DIR *dp, *pdp, *lastdp;
-  char lastcp;
+  DIR *dp, *pdp, *dp_to_remove, *dp_before_remove;
+  int found = 0;
   for(i = 0; i < 12; i++){ // i from 0 to 11 because we are only doing direct blocks
-
     get_block(pmip->dev, pmip->INODE.i_block[i], sbuf);
     pdp = (DIR*)sbuf;
     dp = (DIR*)sbuf;
     cp = sbuf; // byte pointer
 
     while(cp < sbuf + BLKSIZE){ // while cp is not outside block starting at sbuf
-      strncpy(temp, dp->name, dp->name_len); // name is not null terminated
-      temp[dp->name_len] = 0; // add null terminator
-      if(!strcmp(temp, dir_name)){
-        // dp is now the directory entry we need to remove and i is the iblock number
-        goto exit_loops;
+      if(!strncmp(dir_name, dp->name, dp->name_len)){
+        dp_to_remove = dp;
+        dp_before_remove = pdp;
+        found = 1;
       }
       pdp = dp;
       cp += dp->rec_len; // increment rec_len number of bytes
       dp = (DIR*)cp; // set dp to point to next dir
     }
-
+    if(found) break;
   }
-  exit_loops: // i = iblock number to remove from, dp = dir entry to remove
 
-  if(dp->rec_len == BLKSIZE){ // this dir entry is the only one in the block, so we deallocate the block
+  if(dp_to_remove->rec_len == BLKSIZE){ // this dir entry is the only one in the block, so we deallocate the block
     if(i < 12 && pmip->INODE.i_block[i + 1]){ // there is another block after the one we are removing
       for(j = i + 1; j < 12 && pmip->INODE.i_block[j]; j++); // ASSUMING ONLY FIRST 12 BLOCKS HERE
       blk_to_remove = pmip->INODE.i_block[i];
@@ -77,25 +73,18 @@ void rmchild(MINODE* pmip, char dir_name[]){
     }
     bdalloc(pmip->dev, blk_to_remove);
     pmip->INODE.i_size -= BLKSIZE;
+    put_block(dev, pmip->INODE.i_block[i], sbuf);
     return;
   }
-  if(cp + dp->rec_len == sbuf + BLKSIZE){ // this dir entry is the last entry in the block, just remove it and set rec_len of previous to fill the block
-    pdp->rec_len += dp->rec_len;
+  if((char*)dp_to_remove + dp_to_remove->rec_len == sbuf + BLKSIZE){ // this dir entry is the last entry in the block, just remove it and set rec_len of previous to fill the block
+    dp_before_remove->rec_len += dp_to_remove->rec_len;
+    put_block(dev, pmip->INODE.i_block[i], sbuf);
     return;
   }
 // last option is that the dir entry is on a block with more entries after it, so the entries have to be pushed back when its removed.
-  lastcp = cp;
-  lastdp = dp;
-  while(lastcp < sbuf + BLKSIZE){ // while cp is not outside block starting at sbuf
-      lastcp += lastdp->rec_len; // increment rec_len number of bytes
-      pdp = lastdp;
-      lastdp = (DIR*)lastcp; // set dp to point to next dir
-    }
-  lastdp = pdp;
-  lastdp->rec_len += dp->rec_len;
-  len_to_cpy = (sbuf + BLKSIZE) - (cp + dp->rec_len);
-  strncpy(tbuf, (cp + dp->rec_len), len_to_cpy);
-  strncpy(cp, tbuf, len_to_cpy);
+  pdp->rec_len += dp_to_remove->rec_len;
+  memcpy((char*)dp_to_remove, (char*) dp_to_remove + dp_to_remove->rec_len, sbuf + BLKSIZE - (char*)dp_to_remove);
+  put_block(dev, pmip->INODE.i_block[i], sbuf);
 }
 
 void myrmdir(){

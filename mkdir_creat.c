@@ -1,6 +1,39 @@
 
 
+// takes in a pathname and two EMPTY STRING pointers dir and base. Tokenizes pathname (nondestructively) and fills the two strings
+void pathname_to_dir_and_base(char* pathname, char* dir, char* base){
+  char temp[128];
+  char *prev, *s; // temps for tokenization
+  int i = 0;
 
+  strcpy(temp, pathname); // copy pathname to temp for tokenization
+
+  s = strtok(temp, "/"); // gets first token
+
+  // check for special case where / is at start of path meaning to start from root
+  if(s && s[0] == 0){ // if delim is / and first char is / s will equal empty string
+    printf("starting from root\n");
+    s = strtok(temp, '/');
+    strcat(*dir, "/");
+    i++;
+  }
+  while(s){
+      printf("%s\n", s);
+      prev = s;
+
+      s = strtok(0, '/');
+      if(s == NULL){
+          strcpy(base, prev);
+      } else {
+          // this if statement is super bodgy but it works
+          if( !(i == 1 && dir[0] == '/') ) strcat(dir,  "/");
+          strcat(dir, prev);
+      }
+      i++;
+  }
+}
+
+// takes in a MINODE pointer to parent, the inode number of the child, and the name of the child, and enters it as a DIR entry into the parent
 void enter_name(MINODE *pip, int ino, char *name){
   char buf[BLKSIZE];
 
@@ -61,52 +94,31 @@ void enter_name(MINODE *pip, int ino, char *name){
 }
 
 void rmkdir(){
-  // char *pathname = "doge/cat/real";
-  //
+  char dir[128], base[128], temp[128];
+  char *prev, *s; // temps for tokenization
+  int pino; // parent inode number
+  MINODE* pmip; // parent memory inode pointer
+  int i = 0; // tokenization var
+
+  // initialize both to empty strings
+  dir[0] = 0;
+  base[0] = 0;
+
+
+  // input of pathname to create dir, consisting of dirname and basename
   printf("PATHNAME - %s\n", pathname);
+
+  pathname_to_dir_and_base(pathname, dir, base); // breaks pathname into dir and base
+  
+  // dirname and basename should not be separated so we print them to verify
+  printf("DIRNAME - %s\n", dir);
+  printf("BASENAME - %s\n", base);
+
   //
-  char dirname[128];
-  char basename[128];
-  char temp[128];
-  int i = 0;
-
-  dirname[0] = 0;
-  basename[0] = 0;
-
-  MINODE* pmip;
-
-  strcpy(temp, pathname);
-  char *prev = strtok(temp, "/");
-  char *s = prev;
-  // check for special case where / is at start of path meaning to start from root
-  if(s && s[0] == 0){ // if delim is / and first char is / s will equal empty string
-    printf("starting from root\n");
-    s = strtok(temp, '/');
-    strcat(dirname, "/");
-    i++;
-  }
-  while(s){
-      printf("%s\n", s);
-      prev = s;
-
-      s = strtok(0, '/');
-      if(s == NULL){
-          strcpy(basename, prev);
-      } else {
-          // this if statement is super bodgy but it works
-          if( !(i == 1 && dirname[0] == '/') ) strcat(dirname,  "/");
-          strcat(dirname, prev);
-      }
-      i++;
-  }
-  printf("DIRNAME - %s\n", dirname);
-  printf("BASENAME - %s\n", basename);
-
-  int pino;
-  if(strlen(dirname) == 0){
+  if(strlen(dir) == 0){
     pino = running->cwd->ino;
   }else{
-    pino = getino(dirname);
+    pino = getino(dir);
   }
 
   // if(pino == 0)
@@ -117,7 +129,7 @@ void rmkdir(){
     return;
   } else {
     pmip = iget(dev, pino);
-    if(search(pmip, basename) == 0){
+    if(search(pmip, base) == 0){
       printf("[+] Good! file doesn't already exist.\n");
     } else {
       printf("[!] Error dir already exists!\n");
@@ -125,18 +137,10 @@ void rmkdir(){
     }
   }
 
-  // // (4).1. Allocate an INODE and a disk block:
+  
   int ino = ialloc(dev);
   int blk = balloc(dev);
-  //
-  // /*
-  // (4).2. mip = iget(dev, ino) // load INODE into a minode
-  //   initialize mip->INODE as a DIR INODE;
-    // mip->INODE.i_block[0] = blk; other i_block[ ] = 0;
-    // mark minode modified (dirty);
-    // iput(pmip); // write INODE back to disk
-  // */
-  //
+
   MINODE *mip = iget(root->dev, ino);
   INODE *ip = &(mip->INODE);
 
@@ -148,7 +152,7 @@ void rmkdir(){
   ip->i_atime = ip->i_ctime = ip->i_mtime = time(0L);
   ip->i_blocks = 2;
   ip->i_block[0] = blk;
-  for(int k=1; k<14; k++){ // should this zero last 14 blocks (?)
+  for(int k=1; k<15; k++){
     ip->i_block[k] = 0;
   }
   mip->dirty = 1;
@@ -173,19 +177,11 @@ void rmkdir(){
   dp->name[0] = dp->name[1] = '.';
   put_block(dev, blk, buf);
 
-  // /*
-  // (4).4. enter_child(pmip, ino, basename); which enters
-  // (ino, basename) as a dir_entry to the parent INODE;
-  // */
-  enter_name(pmip, ino, basename);
-  //
-  // // if(pmip != NULL){
-  // //   printf("[+] Success!")
-  // // } else {
-  // //   printf("[!] ERROR!\n")
-  // // }
+  enter_name(pmip, ino, base);
+
   iput(pmip);
 }
+
 
 // void creat(){
 //   // char *pathname = "doge/cat/real";

@@ -147,6 +147,6 @@ int quit()
     if (mip->refCount > 0)
       iput(mip);
   }
-  printf("see you later, alligator\n");
+  printf("bye\n");
   exit(0);
 }

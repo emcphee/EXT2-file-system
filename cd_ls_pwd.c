@@ -71,6 +71,9 @@ int ls_file(MINODE *mip, char *name)
 
   printf("[%d %d]", mip->dev, mip->ino); // [dev, ino]
 
+  if (S_ISLNK(i_mode)){
+    printf(" -> %s", (char *)mip->INODE.i_block);
+  }
   printf("\n");
 
   // READ Chapter 11.7.3 HOW TO ls

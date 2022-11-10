@@ -28,13 +28,14 @@ int  fd, dev; // file descriptors
 
 int  nblocks, ninodes, bmap, imap, iblk;
 
-char line[128], cmd[32], pathname[128]; // input line and its split components
+char line[128], cmd[32], pathname[128], pathname2[128]; // input line and its split components
 
 
 #include "cd_ls_pwd.c"
 #include "mkdir_creat.c"
 #include "alloc_dealloc.c"
 #include "rmdir.c"
+#include "link_unlink.c"
 
 int init()
 {
@@ -122,9 +123,10 @@ int main(int argc, char *argv[ ])
     if (line[0]==0)
        continue;
     pathname[0] = 0;
+    pathname2[0] = 0;
 
-    sscanf(line, "%s %s", cmd, pathname);
-    printf("cmd=%s pathname=%s\n", cmd, pathname);
+    sscanf(line, "%s %s %s", cmd, pathname, pathname2);
+    printf("cmd=%s pathname=%s pathname2=%s\n", cmd, pathname, pathname2);
 
     if (strcmp(cmd, "ls")==0)
        ls();
@@ -138,6 +140,10 @@ int main(int argc, char *argv[ ])
       mycreat();
     else if(strcmp(cmd, "rmdir") == 0)
       myrmdir();
+    else if(strcmp(cmd, "link") == 0)
+      my_link();
+    else if(strcmp(cmd, "unlink") == 0)
+      my_unlink();
     else if (strcmp(cmd, "quit")==0)
        quit();
   }

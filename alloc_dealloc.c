@@ -43,6 +43,7 @@ int incFreeInodes(int dev)
   gp = (GD *)buf;
   gp->bg_free_inodes_count++;
   put_block(dev, 2, buf);
+  return 0;
 }
 
 int incFreeBlocks(int dev)
@@ -59,6 +60,7 @@ int incFreeBlocks(int dev)
   gp = (GD *)buf;
   gp->bg_free_blocks_count++;
   put_block(dev, 2, buf);
+  return 0;
 }
 
 int decFreeInodes(int dev)
@@ -161,6 +163,7 @@ int idalloc(int dev, int ino)
 
   // update free inode count in SUPER and GD
   incFreeInodes(dev);
+  return 0;
 }
 
 int bdalloc(int dev, int blk)

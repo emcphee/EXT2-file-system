@@ -116,6 +116,7 @@ void iput(MINODE *mip)  // iput(): release a minode
  if (mip->refCount > 0) return;
  if (!mip->dirty)       return;
 
+
  /* write INODE back to disk */
  block = (mip->ino - 1) / 8 + iblk;
  offset = (mip->ino - 1) % 8;
@@ -263,4 +264,94 @@ int findino(MINODE *mip, u32 *myino) // myino = i# of . return i# of ..
    dp = (DIR*)(cp + dp->rec_len); // dp = second dir ( parent dir .. )
    return dp->inode;
 
+}
+
+void rmchild(MINODE* pmip, char dir_name[]){
+  int i,j;
+  int blk_to_remove;
+  char *cp, temp[256], sbuf[BLKSIZE];
+  int len_to_cpy;
+  DIR *dp, *pdp, *dp_to_remove, *dp_before_remove;
+  int found = 0;
+  for(i = 0; i < 12; i++){ // i from 0 to 11 because we are only doing direct blocks
+    get_block(pmip->dev, pmip->INODE.i_block[i], sbuf);
+    pdp = 0;
+    dp = (DIR*)sbuf;
+    cp = sbuf; // byte pointer
+
+    while(cp < sbuf + BLKSIZE){ // while cp is not outside block starting at sbuf
+      strncpy(temp, dp->name, dp->name_len);
+      temp[dp->name_len] = 0;
+      if(!strcmp(temp, dir_name)){
+        dp_to_remove = dp;
+        dp_before_remove = pdp;
+        found = 1;
+      }
+      pdp = dp;
+      cp += dp->rec_len; // increment rec_len number of bytes
+      dp = (DIR*)cp; // set dp to point to next dir
+    }
+    if(found) break;
+  }
+
+  if(dp_to_remove->rec_len == BLKSIZE){ // this dir entry is the only one in the block, so we deallocate the block
+    if(i < 11 && pmip->INODE.i_block[i + 1]){ // there is another block after the one we are removing
+      for(j = i + 1; j < 12 && pmip->INODE.i_block[j]; j++); // ASSUMING ONLY FIRST 12 BLOCKS HERE
+      blk_to_remove = pmip->INODE.i_block[i];
+      pmip->INODE.i_block[i] = pmip->INODE.i_block[j - 1]; // fill in empty space left by removed block in i_block[]
+      pmip->INODE.i_block[j - 1] = 0;
+    }else{ // there is no other blocks
+      blk_to_remove = pmip->INODE.i_block[i];
+      pmip->INODE.i_block[i] = 0;
+    }
+    bdalloc(pmip->dev, blk_to_remove);
+    pmip->INODE.i_size -= BLKSIZE;
+    put_block(dev, pmip->INODE.i_block[i], sbuf);
+    return;
+  }
+  if((char*)dp_to_remove + dp_to_remove->rec_len == sbuf + BLKSIZE){ // this dir entry is the last entry in the block, just remove it and set rec_len of previous to fill the block
+    dp_before_remove->rec_len += dp_to_remove->rec_len;
+    put_block(dev, pmip->INODE.i_block[i], sbuf);
+    return;
+  }
+// last option is that the dir entry is on a block with more entries after it, so the entries have to be pushed back when its removed.
+  pdp->rec_len += dp_to_remove->rec_len;
+  memcpy((char*)dp_to_remove, (char*) dp_to_remove + dp_to_remove->rec_len, sbuf - (char*)dp_to_remove + BLKSIZE);
+  put_block(dev, pmip->INODE.i_block[i], sbuf);
+}
+
+
+// takes in a pathname and two EMPTY STRING pointers dir and base. Tokenizes pathname (nondestructively) and fills the two strings
+int pathname_to_dir_and_base(char* pathname, char* dir, char* base){
+  char temp[128];
+  int i, found;
+  found = 0;
+  strcpy(temp, pathname);
+  dir[0] = 0;
+  base[0] = 0;
+
+  if(strlen(temp) == 0) return -1; // empty path, dir and base will stay empty
+  for(i = strlen(temp) - 1; i >= 1; i--){ // remove trailing '/'s
+    if(temp[i] != '/') break;
+    temp[i] = 0;
+  }
+
+  if(strlen(temp) == 0) return -1; // empty path, dir and base will stay empty
+
+  for(i = strlen(temp) - 1; i >= 1; i--){
+    if(temp[i] == '/'){
+      found = 1;
+      temp[i] = 0;
+      break;
+    }
+  }
+
+  if(found){
+    strcpy(base, (temp + i + 1));
+    strcpy(dir, temp);
+  }else{
+    strcpy(base, temp);
+  }
+
+  return 0;
 }

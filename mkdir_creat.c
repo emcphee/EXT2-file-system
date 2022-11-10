@@ -1,38 +1,4 @@
 
-
-// takes in a pathname and two EMPTY STRING pointers dir and base. Tokenizes pathname (nondestructively) and fills the two strings
-int pathname_to_dir_and_base(char* pathname, char* dir, char* base){
-  char temp[128];
-  int i, found;
-  found = 0;
-  strcpy(temp, pathname);
-
-  if(strlen(temp) == 0) return -1; // empty path, dir and base will stay empty
-  for(i = strlen(temp) - 1; i >= 1; i--){ // remove trailing '/'s
-    if(temp[i] != '/') break;
-    temp[i] = 0;
-  }
-
-  if(strlen(temp) == 0) return -1; // empty path, dir and base will stay empty
-
-  for(i = strlen(temp) - 1; i >= 1; i--){
-    if(temp[i] == '/'){
-      found = 1;
-      temp[i] = 0;
-      break;
-    }
-  }
-
-  if(found){
-    strcpy(base, (temp + i + 1));
-    strcpy(dir, temp);
-  }else{
-    strcpy(base, temp);
-  }
-
-  return 0;
-}
-
 // takes in a MINODE pointer to parent, the inode number of the child, and the name of the child, and enters it as a DIR entry into the parent
 int enter_name(MINODE *pip, int ino, char *name){
   char buf[BLKSIZE];
@@ -207,10 +173,6 @@ void mycreat(){
   int ret;
   int i = 0;
 
-  //initialize both to empty strings
-  dir[0] = 0;
-  base[0] = 0;
-
 
   //input of pathname to create dir, consisting of dirname and basename
   printf("PATHNAME - %s\n", pathname);
@@ -246,6 +208,11 @@ void mycreat(){
 
   
   ino = ialloc(dev);
+  if(!ino){
+    printf("Error: ino couldn't be allocated.\n");
+    iput(pmip);
+    return 0;
+  }
 
   mip = iget(root->dev, ino);
   ip = &(mip->INODE);

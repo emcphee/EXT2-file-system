@@ -40,6 +40,7 @@ int ls_file(MINODE *mip, char *name)
   int i;
   u16 i_mode;
   time_t time;
+  char temp[128];
 
   i_mode = mip->INODE.i_mode;
 
@@ -67,13 +68,17 @@ int ls_file(MINODE *mip, char *name)
   ftime[strlen(ftime) - 1] = 0; // remove newline
   printf("%s ", ftime); // ctime
 
-  printf("%-10s ", name); // name
+  if (S_ISLNK(i_mode)){
+    strcpy(temp, name);
+    strcat(temp, " -> ");
+    strcat(temp, (char*)mip->INODE.i_block);
+    printf("%-15s ", temp); // name with link
+  }else{
+    printf("%-15s ", name); // name
+  }
 
   printf("[%d %d]", mip->dev, mip->ino); // [dev, ino]
 
-  if (S_ISLNK(i_mode)){
-    printf(" -> %s", (char *)mip->INODE.i_block);
-  }
   printf("\n");
 
   // READ Chapter 11.7.3 HOW TO ls

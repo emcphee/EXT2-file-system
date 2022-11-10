@@ -36,6 +36,7 @@ char line[128], cmd[32], pathname[128], pathname2[128]; // input line and its sp
 #include "alloc_dealloc.c"
 #include "rmdir.c"
 #include "link_unlink.c"
+#include "symlink.c"
 
 int init()
 {
@@ -144,6 +145,8 @@ int main(int argc, char *argv[ ])
       my_link();
     else if(strcmp(cmd, "unlink") == 0)
       my_unlink();
+    else if(strcmp(cmd, "symlink") == 0)
+      my_symlink();
     else if (strcmp(cmd, "quit")==0)
        quit();
   }

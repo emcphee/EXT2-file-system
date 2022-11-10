@@ -49,7 +49,7 @@ void my_unlink(){
         return;
     }
     mip = iget(dev, ino);
-    if(!S_ISREG(mip->INODE.i_mode) && !S_ISREG(mip->INODE.i_mode)){
+    if(!S_ISREG(mip->INODE.i_mode) && !S_ISLNK(mip->INODE.i_mode)){
         printf("Error: Cannot unlink that filetype.\n");
         iput(mip);
         return;

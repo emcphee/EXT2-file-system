@@ -20,6 +20,8 @@ MINODE minode[NMINODE];
 MINODE *root;
 PROC   proc[NPROC], *running;
 
+OFT oft[64]; // OFTs
+
 char gpath[128]; // global for tokenized components
 char *name[64];  // assume at most 64 components in pathname
 int   n;         // number of component strings
@@ -37,6 +39,9 @@ char line[128], cmd[32], pathname[128], pathname2[128]; // input line and its sp
 #include "rmdir.c"
 #include "link_unlink.c"
 #include "symlink.c"
+
+#include "open_close.c" // fix this name later
+#include "read_write.c"
 
 int init()
 {
@@ -59,6 +64,12 @@ int init()
     p->pid = i+1;           // pid = 1, 2
     p->uid = p->gid = 0;    // uid = 0: SUPER user
     p->cwd = 0;             // CWD of process
+    for(j = 0; j < NFD; j++){
+      p->fd[j] = 0;
+    }
+  }
+  for(i = 0; i < 64; i++){
+    oft[i].refCount = 0;
   }
 }
 
@@ -69,7 +80,7 @@ int mount_root()
   root = iget(dev, 2);
 }
 
-char *disk = "mydisk";     // change this to YOUR virtual
+char *disk = "disk2";     // change this to YOUR virtual
 
 int main(int argc, char *argv[ ])
 {
@@ -117,6 +128,9 @@ int main(int argc, char *argv[ ])
   // WRTIE code here to create P1 as a USER process
 
   while(1){
+    char inputTemp[256];
+
+
     printf("input command : [ls|cd|pwd|quit] ");
     fgets(line, 128, stdin);
     line[strlen(line)-1] = 0;
@@ -129,26 +143,40 @@ int main(int argc, char *argv[ ])
     sscanf(line, "%s %s %s", cmd, pathname, pathname2);
     printf("cmd=%s pathname=%s pathname2=%s\n", cmd, pathname, pathname2);
 
-    if (strcmp(cmd, "ls")==0)
-       ls();
-    else if (strcmp(cmd, "cd")==0)
-       cd();
-    else if (strcmp(cmd, "pwd")==0)
-       pwd(running->cwd);
-    else if(strcmp(cmd, "mkdir") == 0)
+    if (strcmp(cmd, "ls")==0){
+      ls();
+    }
+    else if (strcmp(cmd, "cd")==0){
+      cd();
+    }
+    else if (strcmp(cmd, "pwd")==0){
+      pwd(running->cwd);
+    }
+    else if(strcmp(cmd, "mkdir") == 0){
       mymkdir();
-    else if(strcmp(cmd, "creat") == 0)
-      mycreat();
-    else if(strcmp(cmd, "rmdir") == 0)
+    }
+    else if(strcmp(cmd, "creat") == 0){
+      strcpy(inputTemp, pathname);
+      mycreat(inputTemp);
+    }
+    else if(strcmp(cmd, "rmdir") == 0){
       myrmdir();
-    else if(strcmp(cmd, "link") == 0)
+    }
+    else if(strcmp(cmd, "link") == 0){
       my_link();
-    else if(strcmp(cmd, "unlink") == 0)
+    }
+    else if(strcmp(cmd, "unlink") == 0){
       my_unlink();
-    else if(strcmp(cmd, "symlink") == 0)
+    }
+    else if(strcmp(cmd, "symlink") == 0){
       my_symlink();
-    else if (strcmp(cmd, "quit")==0)
-       quit();
+    }
+    else if(strcmp(cmd, "cat") == 0){
+      my_cat(pathname);
+    }
+    else if (strcmp(cmd, "quit")==0){
+      quit();
+    }
   }
 }
 

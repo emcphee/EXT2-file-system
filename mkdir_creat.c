@@ -165,7 +165,7 @@ void mymkdir(){
 }
 
 
-void mycreat(){
+void mycreat(char* filepath){
   char dir[128], base[128], temp[128];
   int pino, ino;
   MINODE *pmip, *mip;
@@ -173,11 +173,10 @@ void mycreat(){
   int ret;
   int i = 0;
 
-
   //input of pathname to create dir, consisting of dirname and basename
-  printf("PATHNAME - %s\n", pathname);
+  printf("PATHNAME - %s\n", filepath);
 
-  ret = pathname_to_dir_and_base(pathname, dir, base); // breaks pathname into dir and base
+  ret = pathname_to_dir_and_base(filepath, dir, base); // breaks pathname into dir and base
   if(ret){
     printf("Error: invalid pathname\n");
     return;

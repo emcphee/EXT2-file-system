@@ -1,18 +1,45 @@
 
 
 void my_symlink(){
+
+    /*
+    (1). check: old_file must exist and new_file not yet exist;
+    (2). creat new_file; change new_file to LNK type;
+    (3). // assume length of old_file name <= 60 chars
+    store old_file name in newfile’s INODE.i_block[ ] area.
+    set file size to length of old_file name
+    mark new_file’s minode dirty;
+    iput(new_file’s minode);
+    (4). mark new_file parent minode dirty;
+    iput(new_file’s parent minode);
+    */
+
+
+    
     char dir[128], base[128], temp[256];
     DIR* dp;
     MINODE *pmip, *mip;
     int ino, pino;
 
+
+
+    // checks old file exists
+    if(!getino(pathname)){
+        printf("Cannot symlink a file that doesn't exist.\n");
+        return;
+    }
+
+
+    // TODO: fix this its no longer necessary with creat changes
     //swaps pathname and pathname2 to call creat
     strcpy(temp, pathname);
     strcpy(pathname, pathname2);
     strcpy(pathname2, temp);
     // now newfilename = pathname
     // and oldfilename = pathname2
-    mycreat();
+
+    mycreat(pathname);
+    // checks to make sure newfile is created
     ino = getino(pathname);
     if(!ino){
         printf("Error: Could not create link.\n");
@@ -29,7 +56,6 @@ void my_symlink(){
     pmip = iget(dev, pino);
     printf("pino = %d\n", pino);
     pmip = iget(dev, pino);
-    pmip->INODE.i_links_count++;
     pmip->dirty = 1;
     iput(pmip);
     mip->INODE.i_mode = 0xA1A4;

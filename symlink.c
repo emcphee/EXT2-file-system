@@ -25,7 +25,7 @@ void my_symlink(){
 
     // checks old file exists
     if(!getino(pathname)){
-        printf("Cannot symlink a file that doesn't exist.\n");
+        printf("Error: Can't symlink a file that doesn't exist.\n");
         return;
     }
 
@@ -45,7 +45,7 @@ void my_symlink(){
         printf("Error: Could not create link.\n");
         return;
     }
-    printf("ino = %d\n", ino);
+    //printf("ino = %d\n", ino);
     mip = iget(dev, ino);
     pathname_to_dir_and_base(pathname, dir, base);
     if(strlen(dir) == 0){
@@ -54,7 +54,7 @@ void my_symlink(){
         pino = getino(dir);
     }
     pmip = iget(dev, pino);
-    printf("pino = %d\n", pino);
+    //printf("pino = %d\n", pino);
     pmip = iget(dev, pino);
     pmip->dirty = 1;
     iput(pmip);

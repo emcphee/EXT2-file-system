@@ -111,13 +111,13 @@ int ialloc(int dev)  // allocate an inode number from inode_bitmap
 
   for (i=0; i < ninodes; i++){ // use ninodes from SUPER block
     if (tst_bit(buf, i)==0){
-        set_bit(buf, i);
-	put_block(dev, imap, buf);
+      set_bit(buf, i);
+      put_block(dev, imap, buf);
 
-	decFreeInodes(dev);
+      decFreeInodes(dev);
 
-	printf("allocated ino = %d\n", i+1); // bits count from 0; ino from 1
-        return i+1;
+      //printf("allocated ino = %d\n", i+1); // bits count from 0; ino from 1
+      return i+1;
     }
   }
   return 0;
@@ -151,7 +151,7 @@ int idalloc(int dev, int ino)
   char buf[BLKSIZE];
 
   if (ino > ninodes){
-    printf("inumber %d out of range\n", ino);
+    printf("Error: inumber %d out of range\n", ino);
     return -1;
   }
 
@@ -173,7 +173,7 @@ int bdalloc(int dev, int blk)
   char buf[BLKSIZE];
 
   if (blk > nblocks){
-    printf("blocknumber %d out of range\n", blk);
+    printf("Error: blocknumber %d out of range\n", blk);
     return -1;
   }
 

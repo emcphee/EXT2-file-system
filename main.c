@@ -141,14 +141,13 @@ int main(int argc, char *argv[ ])
 
   while(1){
 
-    printf("input command : [ls|cd|pwd|quit] ");
+    printf(">> ");
     fgets(line, 128, stdin);
     line[strlen(line)-1] = 0;
 
-    if (line[0]==0)
-       continue;
-    pathname[0] = 0;
-    pathname2[0] = 0;
+    if (!line[0]) continue;
+
+    pathname[0] = pathname2[0] = 0;
 
     sscanf(line, "%s %s %s", cmd, pathname, pathname2);
     printf("cmd=%s pathname=%s pathname2=%s\n", cmd, pathname, pathname2);

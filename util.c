@@ -40,7 +40,7 @@ int tokenize(char *pathname)
 {
   int i;
   char *s;
-  printf("tokenize %s\n", pathname);
+  //printf("tokenize %s\n", pathname);
 
   strcpy(gpath, pathname);   // tokens are in global gpath[ ]
   n = 0;
@@ -181,7 +181,7 @@ int getino(char *pathname) // return ino of pathname
   INODE *ip;
   MINODE *mip;
 
-  printf("getino: pathname=%s\n", pathname);
+  //printf("getino: pathname=%s\n", pathname);
   if (strcmp(pathname, "/")==0)
       return 2;
 
@@ -196,14 +196,14 @@ int getino(char *pathname) // return ino of pathname
   tokenize(pathname);
 
   for (i=0; i<n; i++){
-      printf("===========================================\n");
-      printf("getino: i=%d name[%d]=%s\n", i, i, name[i]);
+      //printf("===========================================\n");
+      //printf("getino: i=%d name[%d]=%s\n", i, i, name[i]);
 
       ino = search(mip, name[i]);
 
       if (ino==0){
          iput(mip);
-         printf("name %s does not exist\n", name[i]);
+         //printf("name %s does not exist\n", name[i]);
          return 0;
       }
 

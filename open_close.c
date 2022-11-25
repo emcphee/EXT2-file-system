@@ -142,7 +142,7 @@ int my_open(char *filename, int mode){
                   break;
          case 3 : oftp->offset =  mip->INODE.i_size;  // APPEND mode
                   break;
-         default: printf("invalid mode\n");
+         default: printf("Error: invalid mode\n");
                   return -1;
       }
     

@@ -82,6 +82,16 @@ int mount_root()
   root = iget(dev, 2);
 }
 
+int cmd_index(char* command){
+  int i;            // 0     1     2        3      4        5        6          7        8         9     10     11    12
+  char* commands[] = {"ls", "cd", "pwd", "mkdir", "creat", "rmdir", "link", "unlink", "symlink", "cat", "cp", "quit", 0};
+  for(i = 0; commands[i]; i++){
+    if(!strcmp(command, commands[i])) break;
+  }
+  return i;
+}
+
+
 char *disk = "disk2";     // change this to YOUR virtual
 
 int main(int argc, char *argv[ ])
@@ -130,8 +140,6 @@ int main(int argc, char *argv[ ])
   // WRTIE code here to create P1 as a USER process
 
   while(1){
-    char inputTemp[256];
-
 
     printf("input command : [ls|cd|pwd|quit] ");
     fgets(line, 128, stdin);
@@ -145,44 +153,22 @@ int main(int argc, char *argv[ ])
     sscanf(line, "%s %s %s", cmd, pathname, pathname2);
     printf("cmd=%s pathname=%s pathname2=%s\n", cmd, pathname, pathname2);
 
-    if (strcmp(cmd, "ls")==0){
-      ls();
+    switch(cmd_index(cmd)){
+      case 0: ls(); break;
+      case 1: cd(); break;
+      case 2: pwd(running->cwd); break;
+      case 3: mymkdir(); break;
+      case 4: mycreat(pathname); break;
+      case 5: myrmdir(); break;
+      case 6: my_link(); break;
+      case 7: my_unlink(); break;
+      case 8: my_symlink(); break;
+      case 9: my_cat(pathname); break;
+      case 10: my_cp(pathname, pathname2); break;
+      case 11: quit(); break;
+      default: break;
     }
-    else if (strcmp(cmd, "cd")==0){
-      cd();
-    }
-    else if (strcmp(cmd, "pwd")==0){
-      pwd(running->cwd);
-    }
-    else if(strcmp(cmd, "mkdir") == 0){
-      mymkdir();
-    }
-    else if(strcmp(cmd, "creat") == 0){
-      strcpy(inputTemp, pathname);
-      mycreat(inputTemp);
-    }
-    else if(strcmp(cmd, "rmdir") == 0){
-      myrmdir();
-    }
-    else if(strcmp(cmd, "link") == 0){
-      my_link();
-    }
-    else if(strcmp(cmd, "unlink") == 0){
-      my_unlink();
-    }
-    else if(strcmp(cmd, "symlink") == 0){
-      my_symlink();
-    }
-    else if(strcmp(cmd, "cat") == 0){
-      my_cat(pathname);
-      pretty_print_block_bitmap_to_file();
-    }
-    else if(strcmp(cmd, "cp") == 0){
-      my_cp(pathname, pathname2);
-    }
-    else if (strcmp(cmd, "quit")==0){
-      quit();
-    }
+    
   }
 }
 
@@ -190,11 +176,10 @@ int quit()
 {
   int i;
   MINODE *mip;
-  for (i=0; i<NMINODE; i++){
+  for (i = 0; i < NMINODE; i++){
     mip = &minode[i];
-    if (mip->refCount > 0)
-      iput(mip);
+    if (mip->refCount > 0) iput(mip);
   }
-  printf("bye\n");
+  printf("exit success\n");
   exit(0);
 }

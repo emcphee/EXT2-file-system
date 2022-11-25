@@ -2,54 +2,44 @@
 
 int my_truncate(MINODE *mip)
 {
-    int i,j, blk_num;
-    char sbuf[BLKSIZE], dbuf[BLKSIZE];
-    unsigned int *indirect_blk_ptr, *double_indirect_blk_ptr;
-    int num_blocks;
+    int i,j;
+    int sibuf[256], dibuf[256];
 
-    num_blocks = BLKSIZE / sizeof(unsigned int);
-    /*
-  1. release mip->INODE's data blocks;
-     a file may have 12 direct blocks, 256 indirect blocks and 256*256
-     double indirect data blocks. release them all.
-  2. update INODE's time field
-
-  3. set INODE's size to 0 and mark Minode[ ] dirty
-    */
    if(!mip){
     printf("Error: truncate failed, passed null pointer.\n");
     return -1;
    }
 
    for(i = 0; i < 12; i++){ // deallocs the first 12 direct blocks
-        blk_num = mip->INODE.i_block[i];
-        if(!blk_num) continue;
-        bdalloc(dev, blk_num);
-        mip->INODE.i_block[i] = 0;
+        if(mip->INODE.i_block[i]){
+            bdalloc(dev, mip->INODE.i_block[i]);
+            mip->INODE.i_block[i] = 0;
+        }
    }
 
    if(mip->INODE.i_block[12]){ // if single indirect block exists, dealloc each of its blocks
-        get_block(dev, mip->INODE.i_block[12], sbuf);
-        for(i = 0; i < num_blocks; i++){
-            indirect_blk_ptr = sbuf + (sizeof(unsigned int) * i);
-            if(*indirect_blk_ptr != 0){
-                bdalloc(dev, *indirect_blk_ptr);
+        get_block(dev, mip->INODE.i_block[12], sibuf);
+        for(i = 0; i < 256; i++){
+            if(sibuf[i]){
+                bdalloc(dev, sibuf[i]);
             }
         }
+        mip->INODE.i_block[12] = 0;
    }
 
    if(mip->INODE.i_block[13]){ // if double indirect4 block exists, dealloc each of its single indirect blocks
-        get_block(dev, mip->INODE.i_block[13], dbuf);
-        for(i = 0; i < num_blocks; i++){
-            double_indirect_blk_ptr = dbuf + (sizeof(unsigned int) * i);
-            get_block(dev, *double_indirect_blk_ptr, sbuf);
-            for(j = 0; j < num_blocks; j++){
-                indirect_blk_ptr = sbuf + (sizeof(unsigned int) * j);
-                if(*indirect_blk_ptr != 0){
-                    bdalloc(dev, *indirect_blk_ptr);
+        get_block(dev, mip->INODE.i_block[13], dibuf);
+        for(i = 0; i < 256; i++){
+            if(dibuf[i]){
+                get_block(dev, dibuf[i], sibuf);
+                for(j = 0; j < 256; j++){
+                    if(sibuf[j] != 0){
+                        bdalloc(dev, sibuf[j]);
+                    }
                 }
             }
         }
+        mip->INODE.i_block[13] = 0;
    }
 
     mip->INODE.i_atime = time(0L);
@@ -153,7 +143,7 @@ int my_open(char *filename, int mode){
          case 3 : oftp->offset =  mip->INODE.i_size;  // APPEND mode
                   break;
          default: printf("invalid mode\n");
-                  return(-1);
+                  return -1;
       }
     
     oftp->minodePtr = mip;

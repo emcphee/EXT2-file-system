@@ -43,6 +43,8 @@ char line[128], cmd[32], pathname[128], pathname2[128]; // input line and its sp
 #include "open_close.c" // fix this name later
 #include "read_write.c"
 
+#include "debug_functions.c"
+
 int init()
 {
   int i, j;
@@ -173,6 +175,10 @@ int main(int argc, char *argv[ ])
     }
     else if(strcmp(cmd, "cat") == 0){
       my_cat(pathname);
+      pretty_print_block_bitmap_to_file();
+    }
+    else if(strcmp(cmd, "cp") == 0){
+      my_cp(pathname, pathname2);
     }
     else if (strcmp(cmd, "quit")==0){
       quit();

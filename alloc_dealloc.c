@@ -130,17 +130,18 @@ int balloc(int dev)
 
   get_block(dev, bmap, buf);
 
-  for (i=0; i < nblocks; i++){
-    if (tst_bit(buf, i)==0){
+  for (int i = 0; i < nblocks; i++) {
+    if (tst_bit(buf, i) == 0) {
         set_bit(buf, i);
-    put_block(dev, bmap, buf);
+        decFreeBlocks(dev);
 
-    decFreeBlocks(dev);
-
-    printf("allocated block num = %d\n", i); // i think blocks count from 0 ? if not change to +1
-        return i;
+        put_block(dev, bmap, buf);
+        return i+1;
     }
-  }
+}
+
+ 
+  printf("Error: No more blocks to allocate.\n");
   return 0;
 }
 

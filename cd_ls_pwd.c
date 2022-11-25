@@ -134,6 +134,12 @@ int ls()
 
     mip = iget(running->cwd->dev, ino); // iget {
 
+    if(!S_ISDIR((mip->INODE.i_mode))){
+      printf("Error: Cannot ls non-dir.\n");
+      iput(mip);
+      return -1;
+    }
+
     if(!mip) return -1; // iget returns 0 on error
 
     r = ls_dir(mip);

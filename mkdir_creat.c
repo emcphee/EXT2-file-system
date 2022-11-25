@@ -216,15 +216,14 @@ void mycreat(char* filepath){
   mip = iget(root->dev, ino);
   ip = &(mip->INODE);
 
-  ip->i_mode = 0x81A4; // 0644
+  ip->i_mode = 0x81A4;
   ip->i_uid = running->uid;
   ip->i_gid = running->gid;
   ip->i_size = 0;
   ip->i_links_count = 1;
   ip->i_atime = ip->i_ctime = ip->i_mtime = time(0L);
   ip->i_blocks = 0;
-  ip->i_block[0] = 0;
-  for(int k=1; k<15; k++){
+  for(int k=0; k<15; k++){
     ip->i_block[k] = 0;
   }
   mip->dirty = 1;

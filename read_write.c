@@ -173,7 +173,12 @@ int my_write(int fd, char* buf, int nbytes){
         cp = wbuf + startByte;
         remain = BLKSIZE - startByte;
         
-        // TODO need to write optimized code for this!!!
+        if(nbytes >= BLKSIZE && remain == BLKSIZE){
+            memcpy(cp, cq, BLKSIZE);
+            nbytes -= BLKSIZE;
+            oftp->offset += BLKSIZE;
+            if(oftp->offset > mip->INODE.i_size) mip->INODE.i_size = oftp->offset;
+        }else{
             while (remain > 0 && nbytes > 0){               // write as much as remain allows  
                 *cp++ = *cq++;              // cq points at buf[ ]
                 nbytes--; remain--;         // dec counts
@@ -181,6 +186,7 @@ int my_write(int fd, char* buf, int nbytes){
                 if (oftp->offset > mip->INODE.i_size)  // especially for RW|APPEND mode
                     mip->INODE.i_size++;    // inc file size (if offset > fileSize)
             }
+        }
         put_block(dev, blk, wbuf);
 
     }
@@ -215,4 +221,34 @@ int my_cp(char* src, char* dst){
     my_close_file(s_fd);
     my_close_file(d_fd);
     return 0;
+}
+
+int my_mv(char* src, char* dst){
+    int sino, dino;
+    MINODE *smip, *dmip;
+
+    sino = getino(src);
+    if(!sino){
+        printf("Error: Source doesn't exist.\n");
+        return -1;
+    }
+
+    dino = getino(dst);
+    if(!dino){
+        mycreat(dst);
+        dino = getino(dst);
+    }
+
+    smip = iget(dev, sino);
+    dmip = iget(dev, dino);
+    if(smip->dev == dmip->dev){ // same dev
+        my_unlink(dst);
+        my_link(src, dst);
+        my_unlink(src);
+    }else{ // different dev
+        my_cp(src, dst);
+        my_unlink(src);
+    }
+    iput(smip);
+    iput(dmip);
 }

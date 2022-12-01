@@ -1,4 +1,3 @@
-// #include "type.h"
 
 extern int imap;
 extern int ninodes;

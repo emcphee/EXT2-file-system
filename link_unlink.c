@@ -1,11 +1,11 @@
 
 
-void my_link(){
+void my_link(char* path1, char* path2){
     int oino, pino;
     MINODE *omip, *pmip;
-    char *dir, *base, temp[256];
+    char dir[256], base[256], temp[256];
     // pathname = oldfile ... pathname2 = newfile
-    oino = getino(pathname);
+    oino = getino(path1);
     if(oino == 0){
         printf("Error: Can't file file to link.\n");
         return;
@@ -16,15 +16,13 @@ void my_link(){
         iput(omip);
         return;
     }
-    if(getino(pathname2)){
+    if(getino(path2)){
         printf("Error: File with that name already exists.\n");
         iput(omip);
         return;
     }
 
-    strcpy(temp, pathname2);
-    dir = dirname(temp);
-    base = basename(temp);
+    pathname_to_dir_and_base(path2, dir, base);
 
     pino = getino(dir);
     pmip = iget(dev, pino);
@@ -38,12 +36,13 @@ void my_link(){
 
 }
 
-void my_unlink(){
+// theres problem where unlinking starting from root node breaks
+void my_unlink(char* path){
     int ino, pino, i;
     MINODE *mip, *pmip;
     char dir[128], base[128], temp[256];
     
-    ino = getino(pathname);
+    ino = getino(path);
     if(!ino){
         printf("Error: file doesn't exist.\n");
         return;
@@ -54,7 +53,7 @@ void my_unlink(){
         iput(mip);
         return;
     }
-    pathname_to_dir_and_base(pathname, dir, base);
+    pathname_to_dir_and_base(path, dir, base);
     if(strlen(dir) == 0){
         pino = running->cwd->ino;
     }else{
@@ -68,11 +67,7 @@ void my_unlink(){
     if(mip->INODE.i_links_count > 0){
         mip->dirty = 1;
     }else{ // links_count = 0 so we remove the file
-        i = 0;
-        while(mip->INODE.i_block[i] && i < 12){
-            bdalloc(dev, mip->INODE.i_block[i]);
-            i++;
-        }
+        my_truncate(mip);
         idalloc(mip->dev, mip->ino);
     }
     iput(mip);

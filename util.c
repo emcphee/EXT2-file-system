@@ -8,7 +8,6 @@
 #include <sys/stat.h>
 #include <time.h>
 
-#include "type.h"
 
 /**** globals defined in main.c file ****/
 extern MINODE minode[NMINODE];

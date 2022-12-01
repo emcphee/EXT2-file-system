@@ -42,6 +42,7 @@ void rmchild(MINODE* pmip, char dir_name[]){
   int len_to_cpy;
   DIR *dp, *pdp, *dp_to_remove, *dp_before_remove;
   int found = 0;
+  printf("1\n");
   for(i = 0; i < 12; i++){ // i from 0 to 11 because we are only doing direct blocks
     get_block(pmip->dev, pmip->INODE.i_block[i], sbuf);
     pdp = 0;
@@ -62,7 +63,6 @@ void rmchild(MINODE* pmip, char dir_name[]){
     }
     if(found) break;
   }
-
   if(dp_to_remove->rec_len == BLKSIZE){ // this dir entry is the only one in the block, so we deallocate the block
     if(i < 11 && pmip->INODE.i_block[i + 1]){ // there is another block after the one we are removing
       for(j = i + 1; j < 12 && pmip->INODE.i_block[j]; j++); // ASSUMING ONLY FIRST 12 BLOCKS HERE
@@ -78,11 +78,13 @@ void rmchild(MINODE* pmip, char dir_name[]){
     put_block(dev, pmip->INODE.i_block[i], sbuf);
     return;
   }
+  printf("3\n");
   if((char*)dp_to_remove + dp_to_remove->rec_len == sbuf + BLKSIZE){ // this dir entry is the last entry in the block, just remove it and set rec_len of previous to fill the block
     dp_before_remove->rec_len += dp_to_remove->rec_len;
     put_block(dev, pmip->INODE.i_block[i], sbuf);
     return;
   }
+  printf("4\n");
 // last option is that the dir entry is on a block with more entries after it, so the entries have to be pushed back when its removed.
   pdp->rec_len += dp_to_remove->rec_len;
   memcpy((char*)dp_to_remove, (char*) dp_to_remove + dp_to_remove->rec_len, sbuf - (char*)dp_to_remove + BLKSIZE);

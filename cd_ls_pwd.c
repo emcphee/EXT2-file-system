@@ -6,6 +6,11 @@ int cd()
   MINODE* mip;
   u16 i_mode;
 
+  if(!my_access(pathname, EXECUTEPERM|READPERM)){
+    printf("Error: invalid permissions.\n");
+    return -1;
+  }
+
   ino = getino(pathname); // finds inode index of path
   mip = iget(dev, ino); // iget {
 
@@ -127,7 +132,10 @@ int ls()
     r = ls_dir(running->cwd); // ls_dir on cwd
 
   }else{ // pathname[0] is not null so theres a second arg for path
-
+    if(!my_access(pathname, EXECUTEPERM|READPERM)){
+    printf("Error: invalid permissions.\n");
+    return -1;
+  }
     ino = getino(pathname);
     if(!ino) return -1; // getino returns 0 on error
 

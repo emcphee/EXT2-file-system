@@ -22,6 +22,15 @@ void my_link(char* path1, char* path2){
         return;
     }
 
+    if(!my_access(path1, READPERM|WRITEPERM|EXECUTEPERM)){
+        printf("Error: invalid permissions.\n");
+        return;
+    }
+    if(!my_access(path2, READPERM|WRITEPERM|EXECUTEPERM)){
+        printf("Error: invalid permissions.\n");
+        return;
+    }
+
     pathname_to_dir_and_base(path2, dir, base);
 
     pino = getino(dir);
@@ -41,6 +50,11 @@ void my_unlink(char* path){
     int ino, pino, i;
     MINODE *mip, *pmip;
     char dir[128], base[128], temp[256];
+
+    if(!my_access(path, ISOWNER)){
+        printf("Error: invalid permissions.\n");
+        return -1;
+    }
     
     ino = getino(path);
     if(!ino){

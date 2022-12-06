@@ -67,6 +67,20 @@ int my_open(char *filename, int mode){
             return -1;
         }
     }
+
+    if(mode == 0 || mode == 2){ // needs read perm
+        if(!my_access(filename, READPERM)){
+            printf("Error: invalid permissions.\n");
+            return -1;
+        }
+    }
+    if(mode == 1 || mode == 2 || mode == 3){ // needs write perm
+        if(!my_access(filename, WRITEPERM)){
+            printf("Error: invalid permissions.\n");
+            return -1;
+        }
+    }
+
     mip = iget(dev, ino);
 
     if(!S_ISREG(mip->INODE.i_mode)){
@@ -74,46 +88,7 @@ int my_open(char *filename, int mode){
         return -1;
     }
     
-    if(running->uid == mip->INODE.i_uid){ // proccess is owner of file
-        if(mode == 0 || mode == 2){ // inode needs owner read perms
-            if( !(mip->INODE.i_mode & S_IRUSR) ){
-                printf("Error: Can't open file, don't have read perms.\n");
-                return -1;
-            }
-        }
-        if(mode == 1 || mode == 2 || mode == 3){ // inode needs owner write perms
-            if( !(mip->INODE.i_mode & S_IWUSR) ){
-                printf("Error: Can't open file, don't have write perms.\n");
-                return -1;
-            }
-        }
-    }else if(running->gid == mip->INODE.i_gid){ // process is in group of file 
-        if(mode == 0 || mode == 2){ // inode needs group read perms
-            if( !(mip->INODE.i_mode & S_IRGRP) ){
-                printf("Error: Can't open file, don't have read perms.\n");
-                return -1;
-            }
-        }
-        if(mode == 1 || mode == 2 || mode == 3){ // inode needs group write perms
-            if( !(mip->INODE.i_mode & S_IWGRP) ){
-                printf("Error: Can't open file, don't have write perms.\n");
-                return -1;
-            }
-        }
-    }else{ // process is not in group of file
-        if(mode == 0 || mode == 2){ // inode needs other read perms
-            if( !(mip->INODE.i_mode & S_IROTH) ){
-                printf("Error: Can't open file, don't have read perms.\n");
-                return -1;
-            }
-        }
-        if(mode == 1 || mode == 2 || mode == 3){ // inode needs other write perms
-            if( !(mip->INODE.i_mode & S_IWOTH) ){
-                printf("Error: Can't open file, don't have write perms.\n");
-                return -1;
-            }
-        }
-    }
+    
     for(i = 0; i < NFD; i++){
         if(!running->fd[i] || running->fd[i]->refCount == 0) continue; // skip unallocated fds
         if(running->fd[i]->minodePtr->ino == mip->ino){ // if the inodes match, check if its open for WR,RDWR,APPEND

@@ -33,6 +33,14 @@ int  nblocks, ninodes, bmap, imap, iblk;
 
 char line[128], cmd[32], pathname[128], pathname2[128]; // input line and its split components
 
+// for permission checking
+#define READPERM 1
+#define WRITEPERM 2
+#define EXECUTEPERM 4
+#define ISOWNER 8
+
+#define DEFAULT_UID 0
+
 
 #include "util.c"
 #include "cd_ls_pwd.c"
@@ -69,7 +77,7 @@ int init()
   for (i=0; i<NPROC; i++){
     p = &proc[i];
     p->pid = i+1;           // pid = 1, 2
-    p->uid = p->gid = 0;    // uid = 0: SUPER user
+    p->uid = p->gid = DEFAULT_UID;    // uid = 0: SUPER user
     p->cwd = 0;             // CWD of process
     for(j = 0; j < NFD; j++){
       p->fd[j] = 0;
@@ -152,7 +160,7 @@ int main(int argc, char *argv[ ])
   //printf("root refCount = %d\n", root->refCount);
 
   //printf("creating P0 as running process\n");
-  running = &proc[0];
+  running = &proc[1];
   running->cwd = iget(dev, 2);
   //printf("root refCount = %d\n", root->refCount);
 

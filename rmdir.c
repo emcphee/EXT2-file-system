@@ -96,6 +96,13 @@ void myrmdir(){
   int ino, pino, i;
   MINODE* mip, *pmip;
   char dir_name[128];
+
+  if(!my_access(pathname, ISOWNER)){
+    printf("Error: invalid permissions.\n");
+    return -1;
+  }
+
+
   ino = getino(pathname);
 
   if(ino == 2){

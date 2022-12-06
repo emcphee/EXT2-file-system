@@ -159,6 +159,7 @@ int search(MINODE *mip, char *name)
    DIR *dp;
    INODE *ip;
 
+
    printf("search for %s in MINODE = [%d, %d]\n", name,mip->dev,mip->ino);
    ip = &(mip->INODE);
 
@@ -194,6 +195,10 @@ int getino(char *pathname) // return ino of pathname
   MINODE *mip;
   MOUNT *mnt;
 
+  if(!my_access(pathname, READPERM|WRITEPERM)){
+    printf("Error: invalid permissions.\n");
+    return 0;
+  }
 
   if(!pathname[0]) return running->cwd->ino;
 
@@ -354,4 +359,44 @@ int pathname_to_dir_and_base(char* pathname, char* dir, char* base){
   }
 
   return 0;
+}
+
+/*
+OWNER
+R- 0x0100
+W- 0x0080
+X- 0x0040
+
+OTHER
+R- 0x0004
+W- 0x0002
+X- 0x0001
+*/
+
+int my_access(char* filename, int mode){
+
+  int r;
+  int ino;
+  MINODE* mip;
+  int fileMode;
+  if(running->uid == 0){
+    printf("SUPERUSER - ACCESS GRANTED uid = %d\n", running->uid);
+    return 1;
+  }
+  r = 1;
+  mip = iget(dev, ino);
+  fileMode = mip->INODE.i_mode;
+  if(mip->INODE.i_uid == running->uid){ // OWNER
+    if( (mode & READPERM) && !(fileMode & 0x0100) ) r = 0;
+    if( (mode & WRITEPERM) && !(fileMode & 0x0080) ) r = 0;
+    if( (mode & EXECUTEPERM) && !(fileMode & 0x0040) ) r = 0;
+  }else{ // OTHER
+    if(mode & ISOWNER) r = 0;
+    if( (mode & READPERM) && !(fileMode & 0x0004) ) r = 0;
+    if( (mode & WRITEPERM) && !(fileMode & 0x0002) ) r = 0;
+    if( (mode & EXECUTEPERM) && !(fileMode & 0x0001) ) r = 0;
+  }
+  return r;
+  
+  return 1;
 }

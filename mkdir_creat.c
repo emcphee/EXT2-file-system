@@ -95,6 +95,12 @@ void mymkdir(){
   printf("DIRNAME - %s\n", dir);
   printf("BASENAME - %s\n", base);
 
+  if(!my_access(dir, READPERM|WRITEPERM|EXECUTEPERM)){
+    printf("Error: invalid permissions.\n");
+    return;
+  }
+
+
   //
   if(strlen(dir) == 0){
     pino = running->cwd->ino;
@@ -181,6 +187,12 @@ void mycreat(char* filepath){
     printf("Error: invalid pathname\n");
     return;
   }
+
+  if(!my_access(dir, READPERM|WRITEPERM|EXECUTEPERM)){
+    printf("Error: invalid permissions.\n");
+    return;
+  }
+
   //dirname and basename should not be separated so we print them to verify
   printf("DIRNAME - %s\n", dir);
   printf("BASENAME - %s\n", base);

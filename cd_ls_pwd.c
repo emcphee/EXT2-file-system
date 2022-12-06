@@ -7,14 +7,16 @@ int cd()
   u16 i_mode;
 
   ino = getino(pathname); // finds inode index of path
-  mip = iget(running->cwd->dev, ino); // iget {
+  mip = iget(dev, ino); // iget {
 
-
+  printf("ino = %d, mip = %x\n", ino, mip);
   // verify mip is a dir
   i_mode = mip->INODE.i_mode;
 
-  if(!S_ISDIR(i_mode)){ // 0100 or 4 is the stated ID for dir in the book
+  if(!S_ISDIR(i_mode)){ 
     printf("Error: path is not a dir.\n");
+    printf("mode = %x\n", i_mode);
+    iput(mip);
     return -1;
   }
   iput(running->cwd); // } iput
@@ -130,7 +132,7 @@ int ls()
     if(!ino) return -1; // getino returns 0 on error
 
 
-    mip = iget(running->cwd->dev, ino); // iget {
+    mip = iget(dev, ino); // iget {
 
     if(!S_ISDIR((mip->INODE.i_mode))){
       printf("Error: Cannot ls non-dir.\n");
@@ -162,18 +164,29 @@ char *pwd(MINODE *wd)
 }
 
 void rpwd(MINODE *wd){
+  int i;
   MINODE* parent_inode_ptr;
   char my_name[256];
   u16 myino, parentino;
-
+  MOUNT* pmnt;
+  MINODE* tmip;
+  
   if(wd == root) return; // base case is root
 
   // puts i# of . in myino and return i# of ..
   parentino = findino(wd, &myino);
-
-  // get parentino from disk and put it into an minode
-
-  parent_inode_ptr = iget(wd->dev, parentino); // iget {
+  if(parentino == 2 && wd->ino == 2 && wd->dev != mountTable[0].dev){
+    for(i = 0; i < 8; i++){
+      if(mountTable[i].dev == wd->dev) break;
+    }
+    parentino = findino(mountTable[i].mounted_inode, &myino);
+    pmnt = &mountTable[i];
+    tmip = pmnt->mounted_inode;
+    parent_inode_ptr = iget(tmip->dev, parentino);
+  }else{
+    parent_inode_ptr = iget(wd->dev, parentino); 
+  }
+  printf("parentino = %d\n", parentino);
 
   if(!parent_inode_ptr) return; // iget returns 0 on error
 

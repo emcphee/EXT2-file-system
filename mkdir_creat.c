@@ -40,7 +40,7 @@ int enter_name(MINODE *pip, int ino, char *name){
       dp->name_len = strlen(name);
       dp->rec_len = remaining;
 
-      put_block(dev, pip->INODE.i_block[i], buf);
+      put_block(pip->dev, pip->INODE.i_block[i], buf);
       return 0;
       //enter the new entry as the LAST entry and
       //trim the previous entry rec_len to its ideal_length;
@@ -48,11 +48,11 @@ int enter_name(MINODE *pip, int ino, char *name){
   }
   if(free_block != 0){
       pip->INODE.i_size += BLKSIZE;
-      bno = balloc(dev);
+      bno = balloc(pip->dev);
       pip->INODE.i_block[free_block] = bno;
       pip->dirty = 1;
 
-      get_block(dev, bno, buf);
+      get_block(pip->dev, bno, buf);
       dp = (DIR*) buf;
       cp = buf;
 
@@ -61,7 +61,7 @@ int enter_name(MINODE *pip, int ino, char *name){
       dp->inode = ino;
       dp->rec_len = BLKSIZE;
 
-      put_block(dev, bno, buf);
+      put_block(pip->dev, bno, buf);
       return 0;
     }else{
       printf("PANIC! no free blocks available to enter name\n");
@@ -119,7 +119,7 @@ void mymkdir(){
   ino = ialloc(dev);
   blk = balloc(dev);
 
-  mip = iget(root->dev, ino);
+  mip = iget(dev, ino);
   ip = &(mip->INODE);
 
   ip->i_mode = 0x41ED;

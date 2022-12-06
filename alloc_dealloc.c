@@ -100,18 +100,30 @@ int decFreeBlocks(int dev)
   return 0;
 }
 
+
 int ialloc(int dev)  // allocate an inode number from inode_bitmap
 {
   int  i;
   char buf[BLKSIZE];
+  GD* gpL;
+  SUPER* spL;
+  int imapL, ninodesL;
+  get_block(dev, 1, buf);
+  spL = (SUPER *)buf;
+  ninodesL = spL->s_inodes_count;
+
+  get_block(dev, 2, buf);
+  gpL = (GD *)buf;
+  imapL = gpL->bg_inode_bitmap;
+
 
   // read inode_bitmap block
-  get_block(dev, imap, buf);
+  get_block(dev, imapL, buf);
 
-  for (i=0; i < ninodes; i++){ // use ninodes from SUPER block
+  for (i=0; i < ninodesL; i++){ // use ninodes from SUPER block
     if (tst_bit(buf, i)==0){
       set_bit(buf, i);
-      put_block(dev, imap, buf);
+      put_block(dev, imapL, buf);
 
       decFreeInodes(dev);
 
@@ -127,14 +139,27 @@ int balloc(int dev)
   int  i;
   char buf[BLKSIZE];
 
-  get_block(dev, bmap, buf);
+  GD* gpL;
+  SUPER* spL;
+  int nblocksL, bmapL;
 
-  for (int i = 0; i < nblocks; i++) {
+  get_block(dev, 1, buf);
+  spL = (SUPER *)buf;
+  nblocksL = spL->s_blocks_count;
+
+  get_block(dev, 2, buf);
+  gpL = (GD *)buf;
+  bmapL = gpL->bg_block_bitmap;
+
+
+  get_block(dev, bmapL, buf);
+
+  for (int i = 0; i < nblocksL; i++) {
     if (tst_bit(buf, i) == 0) {
         set_bit(buf, i);
         decFreeBlocks(dev);
 
-        put_block(dev, bmap, buf);
+        put_block(dev, bmapL, buf);
         return i+1;
     }
 }
@@ -149,17 +174,28 @@ int idalloc(int dev, int ino)
   int i;
   char buf[BLKSIZE];
 
-  if (ino > ninodes){
+  GD* gpL;
+  SUPER* spL;
+  int imapL, ninodesL;
+  get_block(dev, 1, buf);
+  spL = (SUPER *)buf;
+  ninodesL = spL->s_inodes_count;
+
+  get_block(dev, 2, buf);
+  gpL = (GD *)buf;
+  imapL = gpL->bg_inode_bitmap;
+
+  if (ino > ninodesL){
     printf("Error: inumber %d out of range\n", ino);
     return -1;
   }
 
   // get inode bitmap block
-  get_block(dev, imap, buf);
+  get_block(dev, imapL, buf);
   clr_bit(buf, ino-1);
 
   // write buf back
-  put_block(dev, imap, buf);
+  put_block(dev, imapL, buf);
 
   // update free inode count in SUPER and GD
   incFreeInodes(dev);
@@ -171,17 +207,29 @@ int bdalloc(int dev, int blk)
   int i;
   char buf[BLKSIZE];
 
-  if (blk > nblocks){
+  GD* gpL;
+  SUPER* spL;
+  int nblocksL, bmapL;
+
+  get_block(dev, 1, buf);
+  spL = (SUPER *)buf;
+  nblocksL = spL->s_blocks_count;
+
+  get_block(dev, 2, buf);
+  gpL = (GD *)buf;
+  bmapL = gpL->bg_block_bitmap;
+
+  if (blk > nblocksL){
     printf("Error: blocknumber %d out of range\n", blk);
     return -1;
   }
 
   // get inode bitmap block
-  get_block(dev, bmap, buf);
+  get_block(dev, bmapL, buf);
   clr_bit(buf, blk-1);
 
   // write buf back
-  put_block(dev, bmap, buf);
+  put_block(dev, bmapL, buf);
 
   // update free inode count in SUPER and GD
   incFreeBlocks(dev);

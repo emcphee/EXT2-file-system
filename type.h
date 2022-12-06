@@ -50,3 +50,15 @@ typedef struct proc{
 
   OFT    *fd[NFD];
 }PROC;
+
+typedef struct Mount{
+  int    dev;       // dev (opened vdisk fd number) 0 means FREE 
+  int    ninodes;   // from superblock
+  int    nblocks;
+  int    bmap;      // from GD block  
+  int    imap;
+  int    iblk;
+  struct Minode *mounted_inode;
+  char   name[64];  // device name, e.g. mydisk
+  char   mount_name[64]; // mounted DIR pathname
+} MOUNT;

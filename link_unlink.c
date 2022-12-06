@@ -7,7 +7,7 @@ void my_link(char* path1, char* path2){
     // pathname = oldfile ... pathname2 = newfile
     oino = getino(path1);
     if(oino == 0){
-        printf("Error: Can't file file to link.\n");
+        printf("Error: Can't find file to link.\n");
         return;
     }
     omip = iget(dev, oino);
@@ -26,7 +26,7 @@ void my_link(char* path1, char* path2){
 
     pino = getino(dir);
     pmip = iget(dev, pino);
-
+    printf("BASE - %s\nDIR - %s\n", base, dir);
     enter_name(pmip, oino, base);
 
     omip->INODE.i_links_count++;
@@ -36,7 +36,7 @@ void my_link(char* path1, char* path2){
 
 }
 
-// theres problem where unlinking starting from root node breaks
+// theres problem where unlinking with path starting from root node breaks and doesn't exit rmchild()
 void my_unlink(char* path){
     int ino, pino, i;
     MINODE *mip, *pmip;
@@ -59,6 +59,7 @@ void my_unlink(char* path){
     }else{
         pino = getino(dir);
     }
+    
     pmip = iget(dev, pino);
     rmchild(pmip, base);
     pmip->dirty = 1;

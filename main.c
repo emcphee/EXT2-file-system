@@ -19,6 +19,7 @@ extern MINODE *iget();
 MINODE minode[NMINODE];
 MINODE *root;
 PROC   proc[NPROC], *running;
+MOUNT mountTable[8];
 
 OFT oft[64]; // OFTs
 
@@ -41,8 +42,11 @@ char line[128], cmd[32], pathname[128], pathname2[128]; // input line and its sp
 #include "link_unlink.c"
 #include "symlink.c"
 
+#include "mount_umount.c"
+
 #include "open_close.c"
-#include "read_write.c"
+#include "read_cat.c"
+#include "write_cp.c"
 
 #include "debug_functions.c"
 
@@ -74,18 +78,32 @@ int init()
   for(i = 0; i < 64; i++){
     oft[i].refCount = 0;
   }
+  for(i = 0; i < 8; i++){
+    mountTable[i].dev = 0;
+  }
 }
 
 // load root INODE and set root pointer to it
 int mount_root()
 {
+  MOUNT *m;
   //printf("mount_root()\n");
   root = iget(dev, 2);
+
+  m = &mountTable[0];
+  m->dev = dev;
+  m->ninodes = ninodes;
+  m->nblocks = nblocks;
+  m->bmap = bmap;
+  m->imap = imap;
+  m->iblk = iblk;
+
+  return 0;
 }
 
 int cmd_index(char* command){
-  int i;            // 0     1     2        3      4        5        6          7        8         9     10     11    12   13
-  char* commands[] = {"ls", "cd", "pwd", "mkdir", "creat", "rmdir", "link", "unlink", "symlink", "cat", "cp", "quit", "mv", 0};
+  int i;            // 0     1     2        3      4        5        6          7        8         9     10     11    12        13      14   15
+  char* commands[] = {"ls", "cd", "pwd", "mkdir", "creat", "rmdir", "link", "unlink", "symlink", "cat", "cp", "quit", "mv", "mount", "umount", 0};
   for(i = 0; commands[i]; i++){
     if(!strcmp(command, commands[i])) break;
   }
@@ -167,6 +185,8 @@ int main(int argc, char *argv[ ])
       case 10: my_cp(pathname, pathname2); break;
       case 11: quit(); break;
       case 12: my_mv(pathname, pathname2); break;
+      case 13: mount(pathname, pathname2); break;
+      case 14: umount(pathname);
       default: break;
     }
     

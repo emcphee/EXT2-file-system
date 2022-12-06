@@ -65,6 +65,12 @@ MINODE *iget(int dev, int ino)
   char buf[BLKSIZE];
   int blk, offset;
   INODE *ip;
+  GD* gpL;
+  int iblkL;
+
+  get_block(dev, 2, buf);
+  gpL = (GD *)buf;
+  iblkL = gpL->bg_inode_table;
 
   for (i=0; i<NMINODE; i++){
     mip = &minode[i];
@@ -85,7 +91,7 @@ MINODE *iget(int dev, int ino)
        mip->ino = ino;
 
        // get INODE of ino into buf[ ]
-       blk    = (ino-1)/8 + iblk; // block number
+       blk    = (ino-1)/8 + iblkL; // block number
        offset = (ino-1) % 8; // block offset
 
        //printf("iget: ino=%d blk=%d offset=%d\n", ino, blk, offset);
@@ -103,29 +109,36 @@ MINODE *iget(int dev, int ino)
 
 void iput(MINODE *mip)  // iput(): release a minode
 {
- int i, block, offset;
- char buf[BLKSIZE];
- INODE *ip;
+  int i, block, offset;
+  char buf[BLKSIZE];
+  INODE *ip;
 
- if (mip==0)
-     return;
+  GD* gpL;
+  int iblkL;
 
- mip->refCount--;
+  get_block(dev, 2, buf);
+  gpL = (GD *)buf;
+  iblkL = gpL->bg_inode_table;
 
- if (mip->refCount > 0) return;
- if (!mip->dirty)       return;
+  if (mip==0)
+      return;
+
+  mip->refCount--;
+
+  if (mip->refCount > 0) return;
+  if (!mip->dirty)       return;
 
 
- /* write INODE back to disk */
- block = (mip->ino - 1) / 8 + iblk;
- offset = (mip->ino - 1) % 8;
+  /* write INODE back to disk */
+  block = (mip->ino - 1) / 8 + iblkL;
+  offset = (mip->ino - 1) % 8;
 
- get_block(mip->dev, block, buf);
- ip = (INODE *)buf + offset;
- *ip = mip->INODE;
- put_block(mip->dev, block, buf);
+  get_block(mip->dev, block, buf);
+  ip = (INODE *)buf + offset;
+  *ip = mip->INODE;
+  put_block(mip->dev, block, buf);
 
- midalloc(mip);
+  midalloc(mip);
 
 }
 
@@ -151,7 +164,7 @@ int search(MINODE *mip, char *name)
 
    /*** search for name in mip's data blocks: ASSUME i_block[0] ONLY ***/
 
-   get_block(dev, ip->i_block[0], sbuf);
+   get_block(mip->dev, ip->i_block[0], sbuf);
    dp = (DIR *)sbuf;
    cp = sbuf;
    printf("  ino   rlen  nlen  name\n");
@@ -175,14 +188,20 @@ int search(MINODE *mip, char *name)
 
 int getino(char *pathname) // return ino of pathname
 {
-  int i, ino, blk, offset;
+  int i, j, ino, blk, offset;
   char buf[BLKSIZE];
   INODE *ip;
   MINODE *mip;
+  MOUNT *mnt;
+
+
+  if(!pathname[0]) return running->cwd->ino;
 
   //printf("getino: pathname=%s\n", pathname);
-  if (strcmp(pathname, "/")==0)
-      return 2;
+  if (strcmp(pathname, "/")==0){
+    dev = mountTable[0].dev;
+    return 2;
+  }
 
   // starting mip = root OR CWD
   if (pathname[0]=='/')
@@ -202,12 +221,35 @@ int getino(char *pathname) // return ino of pathname
 
       if (ino==0){
          iput(mip);
-         //printf("name %s does not exist\n", name[i]);
+         printf("name %s does not exist\n", name[i]);
          return 0;
       }
 
-      iput(mip);
-      mip = iget(dev, ino);
+      if(ino == 2 && mip->ino == 2 && mip->dev != mountTable[0].dev){ // upward traversal
+        for(j = 0; j < 8; j++){
+          if(mip->dev == mountTable[j].dev) break;
+        }
+        if(j > 7){
+          printf("Error: Mount not found in getino, big error.\n");
+          exit(1);
+        }
+        iput(mip);
+        mip = mountTable[j].mounted_inode;
+        ino = search(mip, ".."); // find parent of mounted inode
+        mip = iget(mip->dev, ino);
+        dev = mip->dev;
+        
+      }else{ // normal cd or downward traversal
+        iput(mip);
+        mip = iget(mip->dev, ino);
+        if(mip->mounted){ // downward traversal
+            mnt = mip->mptr;
+            iput(mip);
+            mip = iget(mnt->dev, 2);
+            dev = mip->dev;
+            ino = mip->ino;
+        }
+      }
    }
 
    iput(mip);
@@ -256,7 +298,7 @@ int findino(MINODE *mip, u32 *myino) // myino = i# of . return i# of ..
    char *cp;
 
       // gets first i_block
-   get_block(dev, mip->INODE.i_block[0], buf);
+   get_block(mip->dev, mip->INODE.i_block[0], buf);
    dp = (DIR *)buf; // dp = first dir ( current dir . )
    cp = buf;
    *myino = dp->inode;
@@ -267,6 +309,7 @@ int findino(MINODE *mip, u32 *myino) // myino = i# of . return i# of ..
 
 // takes in a pathname and two EMPTY STRING pointers dir and base. Tokenizes pathname (nondestructively) and fills the two strings
 int pathname_to_dir_and_base(char* pathname, char* dir, char* base){
+  int rt;
   char temp[128];
   int i, found;
   found = 0;
@@ -289,12 +332,25 @@ int pathname_to_dir_and_base(char* pathname, char* dir, char* base){
       break;
     }
   }
+  rt = 0;
+  if(temp[0] == '/')rt = 1;
 
   if(found){
     strcpy(base, (temp + i + 1));
-    strcpy(dir, temp);
+    if(rt){
+      strcpy(dir, "/");
+      strcat(dir, temp);
+    }else{
+      strcpy(dir, temp);
+    }
   }else{
-    strcpy(base, temp);
+    if(rt){
+      strcpy(dir, "/");
+      strcpy(base, temp + 1);
+    }else{
+      strcpy(base, temp);
+    }
+    
   }
 
   return 0;

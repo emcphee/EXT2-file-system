@@ -1,20 +1,6 @@
 
 
 void my_symlink(){
-
-    /*
-    (1). check: old_file must exist and new_file not yet exist;
-    (2). creat new_file; change new_file to LNK type;
-    (3). // assume length of old_file name <= 60 chars
-    store old_file name in newfile’s INODE.i_block[ ] area.
-    set file size to length of old_file name
-    mark new_file’s minode dirty;
-    iput(new_file’s minode);
-    (4). mark new_file parent minode dirty;
-    iput(new_file’s parent minode);
-    */
-
-
     
     char dir[128], base[128], temp[256];
     DIR* dp;
